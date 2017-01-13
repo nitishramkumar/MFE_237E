@@ -98,6 +98,8 @@ colnames(skewKurtMat) <- c("Skewness","Kurtosis")
 row.names(skewKurtMat) <- c("DBV","GSPC")
 skewKurtMat
 
+#Just a comment
+
 #4
 ## Explain - Return/Standard Deviation covers only the first 2 moments. 
 ## DBV and GSPC vary even in the 3rd (skewness) and 4th (kurtosis) moments

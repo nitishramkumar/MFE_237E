@@ -12,20 +12,20 @@ normalBernoulliMix <- function(normalMean,normalSD,bernProb,jumpMean,jumpSD,n)
   normalMean + normalSD * rnorm(n) + jt
 }
 
-
 normalBernoulliDist <- normalBernoulliMix(0.012,0.05,0.15,-0.03,0.1,600)  
 
-
-
+#density
 plot(density(normalBernoulliDist),type="l",col="blue")
 lines(density(rnorm(600,0.012,0.05)),col="red")
 
+#actual values
 plot(normalBernoulliDist,type="l",col="blue")
 lines(rnorm(600,0.012,0.05),type="l",col="red")
 
 
 ##2
-setwd("C:/_UCLA/237E_Empirical/Assignment1")
+this.dir <- dirname(rstudioapi::getActiveDocumentContext()$path)
+setwd(this.dir)
 library("readxl")
 library("xts")
 dbv <- read_excel("DBV.xlsx")
@@ -39,8 +39,8 @@ gspc.xts <- xts(gspc[,-1],order.by = gspc$Date)
 #logreturns
 dbv.returns <- (dbv.xts$'Adj Close'[-1,] - lag(dbv.xts$'Adj Close')[-1,])/lag(dbv.xts$'Adj Close')[-1,]
 gspc.returns <- (gspc.xts$'Adj Close'[-1,] - lag(gspc.xts$'Adj Close')[-1,])/lag(gspc.xts$'Adj Close')[-1,]
-dbv.logreturns <- log(1+dbv.returns)
-gspc.logreturns <- log(1+gspc.returns)
+dbv.logreturns <- log(dbv.xts$'Adj Close'[-1,]/lag(dbv.xts$'Adj Close')[-1,])
+gspc.logreturns <- log(gspc.xts$'Adj Close'[-1,]/lag(gspc.xts$'Adj Close')[-1,])
 
 #1
 plot(dbv.logreturns)
@@ -98,3 +98,18 @@ colnames(skewKurtMat) <- c("Skewness","Kurtosis")
 row.names(skewKurtMat) <- c("DBV","GSPC")
 skewKurtMat
 
+#4
+## Explain - Return/Standard Deviation covers only the first 2 moments. 
+## DBV and GSPC vary even in the 3rd (skewness) and 4th (kurtosis) moments
+## As GSPC has lower negative skewness, there is lesser chance of getting a negative tail value. 
+## It also has lower kurtosis, which means there is lesser chance of getting an extreme value  
+
+#5
+#a Both assumptions valid (i.e. homoskedastic and normal)
+reg1Summ <- summary(lm(dbv.logreturns ~ gspc.logreturns))
+reg1Summ$coefficients[,2]
+
+#b Heterskedastic errors
+## I think we need to calculate covariance matrix and then perform Y (sigma)^(-0.5) = X (sigma)^(-0.5) + error
+
+#c Non normal errors

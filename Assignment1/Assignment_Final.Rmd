@@ -1,0 +1,78 @@
+---
+output: 
+   pdf_document:
+header-includes:
+   - \usepackage{amssymb, amsmath, amsthm}
+   - \usepackage{tabu}
+   - \newcommand{\E}{\mathbb{E}}
+   - \newcommand{\var}{{\rm Var}}
+   - \newcommand{\N}{\mathcal{N}}
+---
+
+\noindent \begin{tabu} to \textwidth {@{}X[4 l] @{}X[r]}
+  \textbf{Assigment 1}           & \\ 
+  \textbf{Mgmt 237E: Empirical Methods} & \\ 
+  \textbf{Ian Laker, PrasanthKumar, Nitish Ramkumar}         & 
+\end{tabu}
+
+##Question 1
+a)  
+  
+We know the jump at time t is $J_t = B_t(\mu_j + \sigma_j \delta_t$)  
+  
+where $\delta_t$ = N(0,1)  
+  
+and the log returns $r_t = \mu + \sigma \epsilon_t + J_t$  
+  
+**Mean**  
+$\E(J_t) = \E[B_t(\mu_j + \sigma_j \delta_t)]$ = $\E(B_t)\E(\mu_j + \sigma_j \delta_t)$ = $\mathbf{p\mu_j}$   
+
+$\E(r_t) = \E(\mu) + \E(\sigma \epsilon_t) + \E(J_t)$ = $\underline{\mathbf{\mu + p \mu_j}}$
+   
+**Variance**  
+  Var($J_t$) = $\E(J_t^2$) - $(\E(J_t))^2$    
+  = $\E({B_t}^2(\mu_j + \sigma_j \delta_t)^2) - {\mu_j}^2 p^2$  
+  = $\underline{\E({B_t}^2) \E((\mu_j + \sigma_j \delta_t)^2)} - {\mu_j}^2 p^2$  
+    
+  $\underline{\E({B_t}^2)} = Var(B_t) + (E(B_t))^2 = p(1-p) + p^2 = p$  
+$\underline{\E((\mu_j + \sigma_j \delta_t)^2)} = Var(\mu_j + \sigma_j \delta_t) + (\E(\mu_j + \sigma_j \delta_t))^2 = {{\sigma_j}^2 + {\mu_j}^2}$  
+  
+  So, Var($J_t$) =  $\mathbf{p {\sigma_j}^2 + p {\mu_j}^2 - {\mu_j}^2 p^2}$  
+  
+Var($r_t$) = Var($\mu + \sigma \epsilon_t$) + Var($J_t$) = $\underline{\mathbf{{\sigma}^2 + p {\sigma_j}^2 + p {\mu_j}^2 - {\mu_j}^2 p^2}}$  
+  
+**Skewness**  
+  If Skew in terms of mean and variance
+  = $\frac{\E({J_t}^3) - 3\E(J_t) Var(J_t) - (\E(J_t))^3}{(Var(J_t))^{3/2}}$   
+  Then 3rd moment $\mu_3(J_t)$ = $\E({J_t}^3) - 3\E(J_t) Var(J_t) - (\E(J_t))^3$  
+
+******  
+  $\E({J_t}^3) = \E({B_t}^3(\mu_j + \sigma_j \delta_t)^3) = \underline{\E({B_t}^3)\E((\mu_j + \sigma_j \delta_t)^3)}$  
+  
+  We can find $\underline{\E({B_t}^3)}$ by using bernoulli distribution mean, variance and skew( $\frac{1-2p}{\sqrt{p(1-p)}}$). Substitute in skew formula in terms of mean and variance   
+  
+  $\E({B_t}^3) = \frac{(1-2p){(p(1-p))}^{3/2}}{\sqrt{p(1-p)}} + 3p^2(1-p) - p^3$   
+= $(1-2p)(p-p^2) + 3p^2 - 3p^3 + p^3 = \mathbf{p}$  
+    
+  We can find $\underline{\E((\mu_j + \sigma_j \delta_t)^3)}$ by using normal distribution mean, variance and skew (0). Substitute in skew formula in terms of mean and variance  
+  
+ $\E((\mu_j + \sigma_j \delta_t)^3) = \mathbf{3\mu_j {\sigma_j}^2 + {\mu_j}^3}$  
+   
+  so $\E({J_t}^3) = \mathbf{p(3\mu_j {\sigma_j}^2 + {\mu_j}^3)}$  
+    
+so $\mu_3(J_t) = \mathbf{3\mu_j{\sigma_j}^2 p + {\mu_j}^3 p - 3 p^2 \mu_j {\sigma_j}^2 - 3 p^2 {\mu_j}^3 + 2 p^3 {\mu_j}^3}$  
+    
+******          
+Skew($r_t$) = Skew($\mu + \sigma \epsilon_t + J_t$)
+
+We know, Skew(A + B) = $\frac{\mu_3(A) + \mu_3(B)}{(Var(A) + Var(B))^{3/2}}$,  
+  
+Substitute A = $\mu + \sigma \epsilon_t$ and B = $J_t$  
+  
+Skew($r_t$) = $\frac{0 + \mu_3(B)}{{\sigma}^2 + p {\sigma_j}^2 + p {\mu_j}^2 - {\mu_j}^2 p^2)^{3/2}}$  
+  
+  = $\underline{\mathbf{\frac{3\mu_j{\sigma_j}^2 p + {\mu_j}^3 p - 3 p^2 \mu_j {\sigma_j}^2 - 3 p^2 {\mu_j}^3 + 2 p^3 {\mu_j}^3}{({\sigma}^2 + p {\sigma_j}^2 + p {\mu_j}^2 - {\mu_j}^2 p^2)^{3/2}}}}$
+
+  
+
+  

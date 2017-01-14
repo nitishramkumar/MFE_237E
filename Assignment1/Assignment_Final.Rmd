@@ -15,8 +15,8 @@ header-includes:
   \textbf{Ian Laker, PrasanthKumar, Nitish Ramkumar}         & 
 \end{tabu}
 
-##Question 1
-a)  
+##Problem 1
+##1  
   
 We know the jump at time t is $J_t = B_t(\mu_j + \sigma_j \delta_t$)  
   
@@ -74,5 +74,178 @@ Skew($r_t$) = $\frac{0 + \mu_3(B)}{{\sigma}^2 + p {\sigma_j}^2 + p {\mu_j}^2 - {
   = $\underline{\mathbf{\frac{3\mu_j{\sigma_j}^2 p + {\mu_j}^3 p - 3 p^2 \mu_j {\sigma_j}^2 - 3 p^2 {\mu_j}^3 + 2 p^3 {\mu_j}^3}{({\sigma}^2 + p {\sigma_j}^2 + p {\mu_j}^2 - {\mu_j}^2 p^2)^{3/2}}}}$
 
   
+##2 
+The general stock returns are distributed with skew and thick tails. A log normal distribution doesn't cover the skew and the thick tails which are necessary to represent general stock returns.
 
+##3
+
+Get the SP500 monthly data to use as baseline
+```{r}
+# Function to get data #
+getData <- function(sql, n = -1){
+  #setup connection
+  res <- dbSendQuery(wrds, sql)
+  dbHasCompleted(res)
   
+  #perform fetch
+  returnData <- fetch(res, n)
+  
+  #clear memory
+  dbClearResult(res)
+  return(returnData)
+}
+
+
+sql3 <- "SELECT * FROM CRSP.MSP500"
+msp500.all <- getData(sql3)
+msp500.all$caldt <- as.Date(msp500.all$caldt)
+msp500.all.xts <- xts::xts(log(1+msp500.all$vwretd[-1]),order.by = msp500.all$caldt[-1])
+colnames(msp500.all.xts) <- "vwretd"
+```
+
+If the returns are normally distributed, the distribution will look like this compared to the monthly SP returns.
+```{r}
+plot(density(msp500.all.xts),col="blue", type="l",xlim=c(-0.2,0.2))
+
+#only normal
+lines(density(rnorm(n = 600,mean = 0.008,sd = 0.063)),col="red",type="l")
+```
+
+If we take the bernoulli-normal mix, the distribution will look like this compared to the monthly SP returns. 
+
+```{r}
+#normalBernoullimix
+normalBernoulliMix <- function(normalMean,normalSD,bernProb,jumpMean,jumpSD,n)
+{
+  SecondTerm <- jumpMean + jumpSD*rnorm(n)
+  jt <- rbinom(n,1,bernProb)*(SecondTerm)
+  normalMean + normalSD * rnorm(n) + jt
+}
+
+normalBernoulliDist <- normalBernoulliMix(0.012,0.05,0.15,-0.03,0.1,600)  
+
+#mean, SD, skewness, Kurtosis
+mean(normalBernoulliDist)
+sd(normalBernoulliDist)
+library(moments)
+skewness(normalBernoulliDist)
+kurtosis(normalBernoulliDist)
+
+#plot sp500
+plot(density(msp500.all.xts),col="blue", type="l")
+
+#density
+lines(density(normalBernoulliDist),type="l",col="red", ylim=c(0,9))
+#lines(density(rnorm(600,0.012,0.05)),col="red")
+
+#actual values
+lines(normalBernoulliDist,type="l",col="blue")
+#lines(rnorm(600,0.012,0.05),type="l",col="red")
+
+```
+
+##Problem 2
+
+Get the necessary data
+```{r}
+#this.dir <- dirname(rstudioapi::getActiveDocumentContext()$path)
+setwd("C:/_UCLA/237E_Empirical/Assigments/Assignment1")
+library("readxl")
+library("xts")
+head(dbv) <- read_excel("DBV.xlsx")
+gspc <- read_excel("GSPC.xlsx")
+
+dbv$Date <- as.Date(dbv$Date)
+gspc$Date <- as.Date(gspc$Date)
+dbv.xts <- xts(dbv[,-1],order.by = dbv$Date)
+gspc.xts <- xts(gspc[,-1],order.by = gspc$Date)
+```
+
+Calculate the log returns
+```{r}
+dbv.logreturns <- log(dbv.xts$'Adj Close'[-1,]/lag(dbv.xts$'Adj Close')[-1,])
+gspc.logreturns <- log(gspc.xts$'Adj Close'[-1,]/lag(gspc.xts$'Adj Close')[-1,])
+```
+
+##1
+```{r}
+#1
+plot(dbv.logreturns)
+plot(gspc.logreturns)
+
+hist(dbv.logreturns)
+hist(gspc.logreturns)
+```
+
+##2
+##a
+```{r}
+skewNullCheck <- function(returns,alpha=.05){
+  criticalt <- qt(1-(alpha/2),df = length(returns))
+  skewcap <- skewness(returns)
+  skewt <- skewcap/(sqrt(6/length(returns)))
+  returnVal <- c(skewcap,skewt,abs(skewt) > criticalt) #TRUE, so reject normal distribution, no skewness Null
+  names(returnVal) <- c("Sample Skewness","Skewness t","Reject Null?")
+  returnVal
+}
+
+skewNullCheck(dbv.logreturns)
+skewNullCheck(gspc.logreturns)
+
+#b
+kurtosisNullCheck <- function(returns,alpha=.05){
+  criticalt <- qt(1-(alpha/2),df = length(returns))
+  kurtosiscap <- kurtosis(returns)
+  kurtosist <- (kurtosiscap-3)/(sqrt(24/length(returns)))
+  returnVal <- c(kurtosiscap,kurtosist,abs(kurtosist) > criticalt) #TRUE, so reject normal distribution, no skewness Null
+  names(returnVal) <- c("Sample Kurtosis","Kurtosis t","Reject Null?")
+  returnVal
+}
+
+kurtosisNullCheck(dbv.logreturns)
+kurtosisNullCheck(gspc.logreturns)
+
+#c
+jbTest <- function(returns,alpha=.05){
+  criticalchi <- qchisq(1-alpha,df = 2)
+  skewcap <- skewness(returns)
+  kurtosiscap <- kurtosis(returns)
+  jbt <- skewcap^2/(6/length(returns)) + (kurtosiscap-3)^2/(24/length(returns))
+  abs(jbt) > criticalchi #TRUE, so reject normal distribution, no skewness Null
+}
+
+jbTest(dbv.logreturns)
+jbTest(gspc.logreturns)
+```
+
+
+##3
+```{r}
+skewKurtMat <- matrix(c(skewNullCheck(dbv.logreturns)[1],skewNullCheck(gspc.logreturns)[1],kurtosisNullCheck(dbv.logreturns)[1],kurtosisNullCheck(gspc.logreturns)[1]),nrow = 2)
+colnames(skewKurtMat) <- c("Skewness","Kurtosis")
+row.names(skewKurtMat) <- c("DBV","GSPC")
+skewKurtMat
+```
+
+##4
+The expected return to standard deviation ratio covers only the first 2 moments of the return. It doesn't show cover the difference in skewness and kurtosis between the two investments.  
+As GSPC has lower negative skewness, there is lesser chance of getting a negative tail value.  
+It also has lower kurtosis, which means there is lesser chance of getting an extreme value  
+
+##5
+##a 
+Both assumptions valid (i.e. homoskedastic and normal)
+
+```{r}
+reg1Summ <- summary(lm(dbv.logreturns ~ gspc.logreturns))
+reg1Summ$coefficients[,2]
+
+library(DataAnalytics)
+reg2Summ <- lmSumm(lm(dbv.logreturns ~ gspc.logreturns),HAC = T)
+reg2Summ$coef.table[,2]
+
+
+```
+
+
+

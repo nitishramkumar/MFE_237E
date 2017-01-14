@@ -45,7 +45,7 @@ Var($r_t$) = Var($\mu + \sigma \epsilon_t$) + Var($J_t$) = $\underline{\mathbf{{
   If Skew in terms of mean and variance
   = $\frac{\E({J_t}^3) - 3\E(J_t) Var(J_t) - (\E(J_t))^3}{(Var(J_t))^{3/2}}$   
   Then 3rd moment $\mu_3(J_t)$ = $\E({J_t}^3) - 3\E(J_t) Var(J_t) - (\E(J_t))^3$  
-
+bitch
 ******  
   $\E({J_t}^3) = \E({B_t}^3(\mu_j + \sigma_j \delta_t)^3) = \underline{\E({B_t}^3)\E((\mu_j + \sigma_j \delta_t)^3)}$  
   

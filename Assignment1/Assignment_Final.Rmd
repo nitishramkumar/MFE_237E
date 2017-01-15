@@ -101,11 +101,12 @@ msp500.all <- getData(sql3)
 msp500.all$caldt <- as.Date(msp500.all$caldt)
 msp500.all.xts <- xts::xts(log(1+msp500.all$vwretd[-1]),order.by = msp500.all$caldt[-1])
 colnames(msp500.all.xts) <- "vwretd"
+
 ```
 
 If the returns are normally distributed, the distribution will look like this compared to the monthly SP returns.
 ```{r}
-plot(density(msp500.all.xts),col="blue", type="l",xlim=c(-0.2,0.2))
+plot(density(msp500.all.xts),col="blue", type="l",xlim=c(-0.3,0.3))
 
 #only normal
 lines(density(rnorm(n = 600,mean = 0.008,sd = 0.063)),col="red",type="l")
@@ -136,11 +137,9 @@ plot(density(msp500.all.xts),col="blue", type="l")
 
 #density
 lines(density(normalBernoulliDist),type="l",col="red", ylim=c(0,9))
-#lines(density(rnorm(600,0.012,0.05)),col="red")
 
 #actual values
 lines(normalBernoulliDist,type="l",col="blue")
-#lines(rnorm(600,0.012,0.05),type="l",col="red")
 
 ```
 
@@ -152,7 +151,7 @@ Get the necessary data
 setwd("C:/_UCLA/237E_Empirical/Assigments/Assignment1")
 library("readxl")
 library("xts")
-head(dbv) <- read_excel("DBV.xlsx")
+dbv <- read_excel("DBV.xlsx")
 gspc <- read_excel("GSPC.xlsx")
 
 dbv$Date <- as.Date(dbv$Date)
@@ -173,8 +172,9 @@ gspc.logreturns <- log(gspc.xts$'Adj Close'[-1,]/lag(gspc.xts$'Adj Close')[-1,])
 plot(dbv.logreturns)
 plot(gspc.logreturns)
 
-hist(dbv.logreturns)
-hist(gspc.logreturns)
+hist(dbv.logreturns,breaks = 50)
+hist(gspc.logreturns, breaks = 50)
+
 ```
 
 ##2
@@ -184,7 +184,7 @@ skewNullCheck <- function(returns,alpha=.05){
   criticalt <- qt(1-(alpha/2),df = length(returns))
   skewcap <- skewness(returns)
   skewt <- skewcap/(sqrt(6/length(returns)))
-  returnVal <- c(skewcap,skewt,abs(skewt) > criticalt) #TRUE, so reject normal distribution, no skewness Null
+  returnVal <- c(skewcap-3,skewt,abs(skewt) > criticalt) #TRUE, so reject normal distribution, no skewness Null
   names(returnVal) <- c("Sample Skewness","Skewness t","Reject Null?")
   returnVal
 }
@@ -197,7 +197,7 @@ kurtosisNullCheck <- function(returns,alpha=.05){
   criticalt <- qt(1-(alpha/2),df = length(returns))
   kurtosiscap <- kurtosis(returns)
   kurtosist <- (kurtosiscap-3)/(sqrt(24/length(returns)))
-  returnVal <- c(kurtosiscap,kurtosist,abs(kurtosist) > criticalt) #TRUE, so reject normal distribution, no skewness Null
+  returnVal <- c(kurtosiscap-3,kurtosist,abs(kurtosist) > criticalt) #TRUE, so reject normal distribution, no skewness Null
   names(returnVal) <- c("Sample Kurtosis","Kurtosis t","Reject Null?")
   returnVal
 }
@@ -211,16 +211,22 @@ jbTest <- function(returns,alpha=.05){
   skewcap <- skewness(returns)
   kurtosiscap <- kurtosis(returns)
   jbt <- skewcap^2/(6/length(returns)) + (kurtosiscap-3)^2/(24/length(returns))
-  abs(jbt) > criticalchi #TRUE, so reject normal distribution, no skewness Null
+  returnVal <- c(jbt,abs(jbt) > criticalchi)
+  names(returnVal) <- c("JBt","Reject Null?")
+  returnVal
 }
 
 jbTest(dbv.logreturns)
 jbTest(gspc.logreturns)
+
 ```
 
 
 ##3
 ```{r}
+sqlDaily <- "SELECT caldt, vwretd FROM CRSPQ.DSP500 WHERE year(caldt) >= 1973 AND year(caldt) < 2015"
+dsp500 <- getData(sqlDaily)
+
 skewKurtMat <- matrix(c(skewNullCheck(dbv.logreturns)[1],skewNullCheck(gspc.logreturns)[1],kurtosisNullCheck(dbv.logreturns)[1],kurtosisNullCheck(gspc.logreturns)[1]),nrow = 2)
 colnames(skewKurtMat) <- c("Skewness","Kurtosis")
 row.names(skewKurtMat) <- c("DBV","GSPC")
@@ -228,7 +234,7 @@ skewKurtMat
 ```
 
 ##4
-The expected return to standard deviation ratio covers only the first 2 moments of the return. It doesn't show cover the difference in skewness and kurtosis between the two investments.  
+The expected return to standard deviation ratio covers only the first 2 moments of the return. It doesn't show the difference in skewness and kurtosis between the two investments.  
 As GSPC has lower negative skewness, there is lesser chance of getting a negative tail value.  
 It also has lower kurtosis, which means there is lesser chance of getting an extreme value  
 
@@ -237,8 +243,10 @@ It also has lower kurtosis, which means there is lesser chance of getting an ext
 Both assumptions valid (i.e. homoskedastic and normal)
 
 ```{r}
-reg1Summ <- summary(lm(dbv.logreturns ~ gspc.logreturns))
+lm <- lm(dbv.logreturns ~ gspc.logreturns)
+reg1Summ <- summary(lm)
 reg1Summ$coefficients[,2]
+vcov(lm)
 
 library(DataAnalytics)
 reg2Summ <- lmSumm(lm(dbv.logreturns ~ gspc.logreturns),HAC = T)

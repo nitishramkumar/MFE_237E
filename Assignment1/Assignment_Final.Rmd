@@ -42,7 +42,10 @@ We know Mean = 1st Moment ($M_1$) = $\frac{\partial Mg}{\partial s}(s=0)$
   
 $\frac{\partial Mg}{\partial s} = p e^A \frac{\partial A}{\partial s} + (1-p) e^B \frac{\partial B}{\partial s}$  
   
-We can calculate $\frac{\partial A}{\partial s}(s=0) = \mu + \mu_j,  \frac{\partial B}{\partial s}(s=0) = \mu$  
+$\frac{\partial A}{\partial s} = \mu + \sigma^2 s + \mu_j + {\sigma_j}^2 s$  
+$\frac{\partial B}{\partial s} = \mu + \sigma^2 s$
+  
+So, $\frac{\partial A}{\partial s}(s=0) = \mu + \mu_j,  \frac{\partial B}{\partial s}(s=0) = \mu$  
   
 $Mean (\mu_{r_t}) = M_1 = \frac{\partial Mg}{\partial s}(s=0) = \mathbf{ \mu + p \mu_j}$
   
@@ -55,7 +58,7 @@ $M_2 = \frac{\partial^2 Mg}{\partial s^2}(s=0)$
   
 $\frac{\partial^2 Mg}{\partial s^2} = pe^A{\frac{\partial A}{\partial s}}^2 + pe^A\frac{\partial^2 A}{\partial s^2} + e^B{\frac{\partial B}{\partial s}}^2 + e^B\frac{\partial^2 B}{\partial s^2} - pe^A{\frac{\partial B}{\partial s}}^2 - pe^B\frac{\partial^2 B}{\partial s^2}$  
   
-We can calculate $\frac{\partial^2 A}{\partial s^2}(s=0) = \sigma^2 + {\sigma_j}^2,  \frac{\partial^2 B}{\partial s^2}(s=0) = \sigma^2$
+So $\frac{\partial^2 A}{\partial s^2} = \sigma^2 + {\sigma_j}^2,  \frac{\partial^2 B}{\partial s^2} = \sigma^2$
 
 So, $M_2 = p{\mu_j}^2 + 2p\mu \mu_j + p \sigma^2 + p {\sigma_j}^2 + \mu^2 + \sigma^2$  
   
@@ -70,7 +73,7 @@ $M_3 = \pdv[3]{Mg}{s}(s=0)$
   
 $\frac{\partial^3 Mg}{\partial s^3} = pe^A {\frac{\partial A}{\partial s}}^3 + 3pe^A \frac{\partial A}{\partial s} \frac{\partial^2 A}{\partial s^2}  + p e^A \frac{\partial^3 A}{\partial s^3} + e^B {\frac{\partial B}{\partial s}}^3 + 3e^B \frac{\partial B}{\partial s} \frac{\partial^2 B}{\partial s^2}  +  e^B \frac{\partial^3 B}{\partial s^3} - pe^B (\frac{\partial B}{\partial s})^3 - 3pe^B \frac{\partial B}{\partial s} \frac{\partial^2 B}{\partial s^2}  - p e^B \frac{\partial^3 B}{\partial s^3}$  
     
-We can calculate $\frac{\partial^3 A}{\partial s^3}(s=0) = 0,  \frac{\partial^3 B}{\partial s^3}(s=0) = 0$  
+We can calculate $\frac{\partial^3 A}{\partial s^3} = 0,  \frac{\partial^3 B}{\partial s^3} = 0$  
   
 $M_3 = p(\mu + \mu_j)^3 + 3p(\mu + \mu_j)(\sigma^2 + {\sigma_j}^2) + (1-p)(\mu^3 + 3 \mu \sigma^2)$  
   
@@ -86,20 +89,20 @@ $M_4 = \pdv[4]{Mg}{s}(s=0)$
   
 $\pdv[4]{Mg}{s} = p e^A {\pdv[1]{Mg}{s}}^4 + 6 p e^A {\pdv[1]{Mg}{s}}^2 \pdv[2]{Mg}{s} + 4p e^A \pdv[1]{Mg}{s} \pdv[3]{Mg}{s} + 3p e^A {\pdv[2]{Mg}{s}}^2 + p e^A \pdv[4]{Mg}{s}$  
   
-$\pdv[4]{A}{s} = 0, \pdv[4]{B}{s} = 0$  
+We can calculate, $\pdv[4]{A}{s} = 0, \pdv[4]{B}{s} = 0$  
   
 $M_4 = p(\mu + \mu_j)^4 + 6p(\mu + \mu_j)^2(\sigma^2 + {\sigma_j}^2) + 3p(\sigma^2 + {\sigma_j}^2)^2 + (1-p)(\mu^4 + 6\mu^2 \sigma^2 + 3 \sigma^3)$  
   
-So Kurtosis = $\mathbf{\frac{3 {\sigma_j}^4 p (1 - p) + {\mu_j}^4 p (-6p^3 + 12p^2 -7p +1) + {\mu_j}^3 {\sigma_j}^3 p (12p^2 - 18p _ 6)}{(\sigma^2 + p {\sigma_j}^2 + p {\mu_j}^2 - p^2 {\mu_j}^2)^2}}$ 
+So Kurtosis = $\mathbf{\frac{3 {\sigma_j}^4 p (1 - p) + {\mu_j}^4 p (-6p^3 + 12p^2 -7p +1) + {\mu_j}^2 {\sigma_j}^2 p (12p^2 - 18p + 6)}{(\sigma^2 + p {\sigma_j}^2 + p {\mu_j}^2 - p^2 {\mu_j}^2)^2}}$ 
   
 ##2 
-The general stock returns are distributed with skew and thick tails. A log normal distribution doesn't cover the skew and the thick tails which are necessary to represent general stock returns.
+We observed that the daily and monthly log stock market returns are negatively skewed and have fat tails compared to a normal. This Bernoulli-normal mixture model can take care of the skewness and fat tails of the log returns by appropriately choosing the parameters $\sigma, \mu, \sigma_j, \mu_j$ since the skewness and excess kurtosis of this distribution is a function of these parameters as obtained in part1.
 
 ##3
 
-Get the SP500 monthly data to use as baseline
-```{r}
-# Function to get data #
+Lets use WRDS to get the SP500 monthly data which can be used as baseline
+```{r echo=FALSE}
+#template function to get data from WRDS
 getData <- function(sql, n = -1){
   #setup connection
   res <- dbSendQuery(wrds, sql)
@@ -114,24 +117,58 @@ getData <- function(sql, n = -1){
 }
 
 
-sql3 <- "SELECT * FROM CRSP.MSP500"
-msp500.all <- getData(sql3)
+#get SP500 data and convert into a xts object
+library(xts)
+startDate <- as.Date("1966-01-01")
+sql <- "SELECT caldt,vwretd FROM CRSP.MSP500"
+msp500.all <- getData(sql)
 msp500.all$caldt <- as.Date(msp500.all$caldt)
 msp500.all.xts <- xts::xts(log(1+msp500.all$vwretd[-1]),order.by = msp500.all$caldt[-1])
 colnames(msp500.all.xts) <- "vwretd"
+msp500.all.xts <- msp500.all.xts[index(msp500.all.xts)>startDate]
 
 ```
 
-If the returns are normally distributed, the distribution will look like this compared to the monthly SP returns.
+**i.i.d and normally distributed**
 ```{r}
-plot(density(msp500.all.xts),col="blue", type="l",xlim=c(-0.3,0.3))
 
-#only normal
-lines(density(rnorm(n = 600,mean = 0.008,sd = 0.063)),col="red",type="l")
+#plotting ACTUAL DATE vs TIME
+plot(msp500.all.xts,ylab="actual returns",main="Actual returns vs time",ylim=c(-0.3,0.3))
+
+#simulating iid log normal returns 
+logret_normal=rnorm(n = 600,mean = 0.008,sd = 0.063)
+logret_normal = xts(logret_normal,order.by = as.Date(index(msp500.all.xts)))
+#plotting LOG NORMAL RETURNS vs TIME
+plot(logret_normal,ylab="log normal returns",xlab="months",main="simulated log normal returns vs time",ylim=c(-0.3,0.3))
+
+#plotting distributions of simulated log normal returns and the actual data 
+plot(density(msp500.all.xts),col="blue", type="l",xlim=c(-0.3,0.3),xlab=" returns",ylab = "Density")
+lines(density(logret_normal),col="red")
+legend("topright",c("iid lognormal dist","Actual data dist"),col=c("red","blue"),lty = 1)
+lines(x=0.008,y = 10)
 ```
 
-If we take the bernoulli-normal mix, the distribution will look like this compared to the monthly SP returns. 
 
+```{r}
+library(moments)
+stats1 <- matrix(nrow=4,ncol=2)
+stats1[1,1] <- mean(msp500.all.xts)
+stats1[1,2] <- mean(logret_normal)
+stats1[2,1] <- sd(msp500.all.xts)
+stats1[2,2] <- sd(logret_normal)
+stats1[3,1] <- skewness(msp500.all.xts)
+stats1[3,2] <- skewness(logret_normal)
+stats1[4,1] <- kurtosis(msp500.all.xts)
+stats1[4,2] <- kurtosis(logret_normal)
+colnames(stats1) <- c("SP500 Log Returns","Normal Log Returns")
+row.names(stats1) <- c("Mean","Standard Deviation","Skewness","Kurtosis")
+stats1
+```
+We can observe that the variance of the last 50 years of log returns from SP500 doesn't match the variance of the normal log distribution. But we can notice the fat left tail (kurtosis) of the SP500 log returns, which is not represeneted by the iid log normal distribution.  
+  
+Also, we would expect the SP500 log returns to have skewness as compared to 0 skewness (almost) in a log normal distribution. This shows that failure of log normal distribution to explain the skewness of the actual data.            
+
+**Bernoulli-normal mixture model** 
 ```{r}
 #normalBernoullimix
 normalBernoulliMix <- function(normalMean,normalSD,bernProb,jumpMean,jumpSD,n)
@@ -141,31 +178,62 @@ normalBernoulliMix <- function(normalMean,normalSD,bernProb,jumpMean,jumpSD,n)
   normalMean + normalSD * rnorm(n) + jt
 }
 
-normalBernoulliDist <- normalBernoulliMix(0.012,0.05,0.15,-0.03,0.1,600)  
-
 #mean, SD, skewness, Kurtosis
-mean(normalBernoulliDist)
-sd(normalBernoulliDist)
-library(moments)
-skewness(normalBernoulliDist)
-kurtosis(normalBernoulliDist)
+m=0.012
+sig=0.05
+p=0.15
+mj=-0.03
+sigj=0.1
+normalBernoulliDist <- normalBernoulliMix(m,sig,p,mj,sigj,600)  
 
-#plot sp500
-plot(density(msp500.all.xts),col="blue", type="l")
+#plotting log returns from the jump model over time
+plot(normalBernoulliDist,ylab="log returns_jump model",xlab="months",main="simulated log returns from the jump model vs time",ylim=c(-0.3,0.3))
+lines(normalBernoulliDist)
 
-#density
-lines(density(normalBernoulliDist),type="l",col="red", ylim=c(0,9))
 
-#actual values
-lines(normalBernoulliDist,type="l",col="blue")
+#plotting distributions of simulated log returns from the jump model and the actual data 
+plot(density(msp500.all.xts),col="blue", type="l",xlim=c(-0.3,0.3),xlab=" returns",ylab = "Density",ylim=c(0,13))
+lines(density(normalBernoulliDist),col="red")
+legend("topright",c("log returns_jump model","Actual data"),col=c("red","blue"),lty = 1)
 
+stats2 <- matrix(nrow=4,ncol=2)
+stats2[1,1] <- mean(msp500.all.xts)
+stats2[1,2] <- mean(normalBernoulliDist)
+stats2[2,1] <- sd(msp500.all.xts)
+stats2[2,2] <- sd(normalBernoulliDist)
+stats2[3,1] <- skewness(msp500.all.xts)
+stats2[3,2] <- skewness(normalBernoulliDist)
+stats2[4,1] <- kurtosis(msp500.all.xts)
+stats2[4,2] <- kurtosis(normalBernoulliDist)
+colnames(stats2) <- c("SP500 Log Returns","Bernoulli Normal Mix Model")
+row.names(stats2) <- c("Mean","Standard Deviation","Skewness","Kurtosis")
+stats2
 ```
+
+The SP500 data doesn't have exactly the same statistical parameters as compared to the bernoulli normal mix model. But it can be clearly observed that the bernoulli normal mix has non-zero skewness and excess kurtosis which is similar to the SP500 log returns data. This wasn't explained by the log normal model.     
+  
+The unconditional mean, standard deviation, skewness and kurtosis are as below:
+```{r}
+mean_jumpmodel= m + p*mj
+variance_jumpmodel = sig^2 + p*(sigj^2) + p*(mj^2) - (p^2)*(mj^2)
+sd_jumpmodel = sqrt(variance_jumpmodel)
+
+skewness_jumpmodel= (p*mj*(mj^2*(2*p^2 - 3*p + 1) - 3*sigj^2*(p-1)))/(variance_jumpmodel)^(3/2)
+kurtosis_jumpmodel = (3*sigj^4*p*(1-p) + mj^4*p*(-6*p^3 + 12*p^2 - 7*p + 1) + mj^2*sigj^2*p*(12*p^2 - 18*p + 6))/(variance_jumpmodel)^2
+
+statsJump <- c(mean_jumpmodel,sd_jumpmodel,skewness_jumpmodel,kurtosis_jumpmodel)
+names(statsJump) <- c("Mean","Sd","Skewness","Kurtosis")
+statsJump
+  
+```
+  
+One aspect which is not explained by the bernoulli normal mix model is the difference in kurtosis of the two tails involved. the negative tail has more risk consequences, which should be modelled.  
+  
 
 ##Problem 2
 
-Get the necessary data
+Firstly get the necessary data
 ```{r}
-#this.dir <- dirname(rstudioapi::getActiveDocumentContext()$path)
 setwd("C:/_UCLA/237E_Empirical/Assigments/Assignment1")
 library("readxl")
 library("xts")
@@ -185,13 +253,23 @@ gspc.logreturns <- log(gspc.xts$'Adj Close'[-1,]/lag(gspc.xts$'Adj Close')[-1,])
 ```
 
 ##1
+
+Time series for DBV and GSPC are below
 ```{r}
 #1
-plot(dbv.logreturns)
-plot(gspc.logreturns)
+plot(dbv.logreturns, main = "Times series plot of DBV")
+lines(dbv.logreturns,col="red")
 
-hist(dbv.logreturns,breaks = 50)
-hist(gspc.logreturns, breaks = 50)
+plot(gspc.logreturns, main = "Times series plot of GSPC")
+lines(gspc.logreturns,col="blue")
+
+```
+
+The histograms are stacked on one another
+```{R}
+hist(dbv.logreturns,breaks = 200,col="red")
+hist(gspc.logreturns, breaks = 200,col="blue",add=TRUE)
+legend("topright",c("DBV Log returns","SP500 Log returns"),col=c("red","blue"))
 
 ```
 
@@ -206,11 +284,23 @@ skewNullCheck <- function(returns,alpha=.05){
   names(returnVal) <- c("Sample Skewness","Skewness t","Reject Null?")
   returnVal
 }
+```
 
+When the sample skewness check is done for the two returns
+```{r}
 skewNullCheck(dbv.logreturns)
+```
+We can see that this DBV sample skewness is significantly different from 0 with a confidence of 5%
+
+```{r}
 skewNullCheck(gspc.logreturns)
+```
+We can see that this GSPC sample skewness is significantly different from 0 with a confidence of 5%
+
 
 #b
+
+```{r}
 kurtosisNullCheck <- function(returns,alpha=.05){
   criticalt <- qt(1-(alpha/2),df = length(returns))
   kurtosiscap <- kurtosis(returns)
@@ -219,11 +309,23 @@ kurtosisNullCheck <- function(returns,alpha=.05){
   names(returnVal) <- c("Sample Kurtosis","Kurtosis t","Reject Null?")
   returnVal
 }
-
+```
+  
+When the sample kurtosis check is done for the two returns
+```{r}
 kurtosisNullCheck(dbv.logreturns)
+```
+  
+We can see that this DBV sample excess kurtosis is significantly different from 3 with a confidence of 5%
+
+```{r}
 kurtosisNullCheck(gspc.logreturns)
+```
+We can see that this GSPC sample excess kurtosis is significantly different from 3 with a confidence of 5%
 
 #c
+
+```{r}
 jbTest <- function(returns,alpha=.05){
   criticalchi <- qchisq(1-alpha,df = 2)
   skewcap <- skewness(returns)
@@ -233,45 +335,57 @@ jbTest <- function(returns,alpha=.05){
   names(returnVal) <- c("JBt","Reject Null?")
   returnVal
 }
-
-jbTest(dbv.logreturns)
-jbTest(gspc.logreturns)
-
 ```
 
+We can run the JB test for both the returns
+```{r}
+jbTest(dbv.logreturns)
+```
+
+This confirms that the DBV returns is not normal with a confidence of 5%
+```{r}
+jbTest(gspc.logreturns)
+```
+This confirms that the GSPC returns is not normal with a confidence of 5%
 
 ##3
 ```{r}
-sqlDaily <- "SELECT caldt, vwretd FROM CRSPQ.DSP500 WHERE year(caldt) >= 1973 AND year(caldt) < 2015"
-dsp500 <- getData(sqlDaily)
-
 skewKurtMat <- matrix(c(skewNullCheck(dbv.logreturns)[1],skewNullCheck(gspc.logreturns)[1],kurtosisNullCheck(dbv.logreturns)[1],kurtosisNullCheck(gspc.logreturns)[1]),nrow = 2)
 colnames(skewKurtMat) <- c("Skewness","Kurtosis")
 row.names(skewKurtMat) <- c("DBV","GSPC")
 skewKurtMat
 ```
-
+  
+As it can be seen from the table, GSPC has lower skewness and kurtosis as compared to DBV.  
+  
 ##4
 The expected return to standard deviation ratio covers only the first 2 moments of the return. It doesn't show the difference in skewness and kurtosis between the two investments.  
 As GSPC has lower negative skewness, there is lesser chance of getting a negative tail value.  
-It also has lower kurtosis, which means there is lesser chance of getting an extreme value  
+It also has lower kurtosis, which means there is lesser chance of getting an extreme value.  
+  
+Also, SP500 has 500 constituents, which allows it move towards a normal distribution as per central limit theorem, compared to the DBV currency portfolio, which only has 6 constituents. The currency portfolio also depends on international exchange and interest rates. This introduces an additional risk factor, mainly due to the presence of leverage.  
+
 
 ##5
 ##a 
-Both assumptions valid (i.e. homoskedastic and normal)
+Firstly, lets perform a regression where both assumptions valid (i.e. homoskedastic and normal)
 
 ```{r}
 lm <- lm(dbv.logreturns ~ gspc.logreturns)
 reg1Summ <- summary(lm)
 reg1Summ$coefficients[,2]
-vcov(lm)
+```
 
+Now, we can remove the assumptions. For heteroskedasticity, we can use the HAC value as part of the lmSumm function in Data Analytics package. This adjusts for the standard error due to heteroskedasticity.  
+  
+With regards to non-normality, Asympotitic OLS will handle this case. Due to central limit theorem, we can say that OLS will be able to handle non-normal errors
+
+```{r}
 library(DataAnalytics)
 reg2Summ <- lmSumm(lm(dbv.logreturns ~ gspc.logreturns),HAC = T)
 reg2Summ$coef.table[,2]
 
-
 ```
 
-
+Generally OLS with homoskedasticity underestimates the variability in error. This is the situation in this case. By removing the heteroskedasticity condition, we should expect the error in prediction to increase due to the previous underestimation.
 

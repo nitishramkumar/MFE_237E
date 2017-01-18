@@ -1,0 +1,23 @@
+---
+output: 
+   pdf_document:
+header-includes:
+   - \usepackage{amssymb, amsmath, amsthm}
+   - \usepackage{tabu}
+   - \usepackage{physics}
+   - \newcommand{\E}{\mathbb{E}}
+   - \newcommand{\N}{\mathcal{N}}
+---
+
+\noindent \begin{tabu} to \textwidth {@{}X[4 l] @{}X[r]}
+  \textbf{Assigment 2}           & \\ 
+  \textbf{Mgmt 237E: Empirical Methods} & \\ 
+  \textbf{Ian Laker, PrasanthKumar, Nitish Ramkumar}         & 
+\end{tabu}
+
+##Problem 1
+##a  
+##b
+##c
+
+##Problem 2

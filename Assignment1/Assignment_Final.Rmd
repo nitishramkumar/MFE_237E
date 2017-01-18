@@ -93,7 +93,7 @@ We can calculate, $\pdv[4]{A}{s} = 0, \pdv[4]{B}{s} = 0$
   
 $M_4 = p(\mu + \mu_j)^4 + 6p(\mu + \mu_j)^2(\sigma^2 + {\sigma_j}^2) + 3p(\sigma^2 + {\sigma_j}^2)^2 + (1-p)(\mu^4 + 6\mu^2 \sigma^2 + 3 \sigma^3)$  
   
-So Kurtosis = $\mathbf{\frac{3 {\sigma_j}^4 p (1 - p) + {\mu_j}^4 p (-6p^3 + 12p^2 -7p +1) + {\mu_j}^2 {\sigma_j}^2 p (12p^2 - 18p + 6)}{(\sigma^2 + p {\sigma_j}^2 + p {\mu_j}^2 - p^2 {\mu_j}^2)^2}}$ 
+So Kurtosis = $\mathbf{\frac{-4 p^2 {\mu_j}^4 - 6 p^2 {\mu_j}^2 \sigma^2 - 12 p^2 {\mu_j}^2 {\sigma_j}^2 + 4 \mu^4 + 6 p^3 {\mu_j}^4 + 6 p^3 {\mu_j}^2 {\sigma_j}^2 - 3 p^4 {\mu_j}^4 + p {\mu_j}^4 + 4p \mu^3 \mu_j + 6p\sigma^2 {\mu_j}^2 + 3p{\sigma_j}^4 +6 p \sigma^2 {\sigma_j}^4 + 3 \sigma^4}{(\sigma^2 + p {\sigma_j}^2 + p {\mu_j}^2 - p^2 {\mu_j}^2)^2}}$ 
   
 ##2 
 We observed that the daily and monthly log stock market returns are negatively skewed and have fat tails compared to a normal. This Bernoulli-normal mixture model can take care of the skewness and fat tails of the log returns by appropriately choosing the parameters $\sigma, \mu, \sigma_j, \mu_j$ since the skewness and excess kurtosis of this distribution is a function of these parameters as obtained in part1.
@@ -101,7 +101,7 @@ We observed that the daily and monthly log stock market returns are negatively s
 ##3
 
 Lets use WRDS to get the SP500 monthly data which can be used as baseline
-```{r echo=FALSE}
+```{r}
 #template function to get data from WRDS
 getData <- function(sql, n = -1){
   #setup connection
@@ -118,7 +118,9 @@ getData <- function(sql, n = -1){
 
 
 #get SP500 data and convert into a xts object
-library(xts)
+options(warn=-1)
+suppressMessages(library(xts))
+options(warn=0)
 startDate <- as.Date("1966-01-01")
 sql <- "SELECT caldt,vwretd FROM CRSP.MSP500"
 msp500.all <- getData(sql)
@@ -150,7 +152,9 @@ lines(x=0.008,y = 10)
 
 
 ```{r}
-library(moments)
+options(warn=-1)
+suppressMessages(library(moments))
+options(warn=0)
 stats1 <- matrix(nrow=4,ncol=2)
 stats1[1,1] <- mean(msp500.all.xts)
 stats1[1,2] <- mean(logret_normal)
@@ -219,12 +223,14 @@ variance_jumpmodel = sig^2 + p*(sigj^2) + p*(mj^2) - (p^2)*(mj^2)
 sd_jumpmodel = sqrt(variance_jumpmodel)
 
 skewness_jumpmodel= (p*mj*(mj^2*(2*p^2 - 3*p + 1) - 3*sigj^2*(p-1)))/(variance_jumpmodel)^(3/2)
-kurtosis_jumpmodel = (3*sigj^4*p*(1-p) + mj^4*p*(-6*p^3 + 12*p^2 - 7*p + 1) + mj^2*sigj^2*p*(12*p^2 - 18*p + 6))/(variance_jumpmodel)^2
+#kurtosis_jumpmodel = (3*sigj^4*p*(1-p) + mj^4*p*(-6*p^3 + 12*p^2 - 7*p + 1) + mj^2*sigj^2*p*(12*p^2 - 18*p #+ 6))/(variance_jumpmodel)^2
+kurtosis_jumpmodel = (-4*p^2*mj^4 - 6*p^2*mj^2*sig^2 +4*m^4- 12*p^2*mj^2*sig^2 + 6*p^3*mj^4 + 6*p^3*mj^2*sigj^2 -3*p^4*mj^4 + p*mj^4 + 4*p*m^3*mj + 6*p*sig^2*mj^2 + 6*p*sigj^2*mj^2 + 3*p*sigj^4 + 6*p*sig^2*sigj^2 + 3*sig^4)/(variance_jumpmodel)^2 
+
 
 statsJump <- c(mean_jumpmodel,sd_jumpmodel,skewness_jumpmodel,kurtosis_jumpmodel)
 names(statsJump) <- c("Mean","Sd","Skewness","Kurtosis")
 statsJump
-  
+
 ```
   
 One aspect which is not explained by the bernoulli normal mix model is the difference in kurtosis of the two tails involved. the negative tail has more risk consequences, which should be modelled.  

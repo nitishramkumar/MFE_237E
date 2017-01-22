@@ -61,19 +61,21 @@ colnames(excess.returns) <- colnames(portfolio.data)
 For each industry, regress the excess return on market excess return  
 
 ```{r}
-
+options(warn = -1)
+suppressWarnings(library(DataAnalytics))
+options(warn = 0)
 regressionData <- function(excess.industryReturns){
   reg <- lm(excess.industryReturns~datafactors$Mkt.RF[index(excess.industryReturns)])
-  lmSumm <- summary(reg)
-  
-  result <- c(lmSumm$coefficients[2,c(1,2)],lmSumm$coefficients[1,c(1,2)],lmSumm$r.squared)
+  dummy <- capture.output(summ <- lmSumm(reg,HAC = TRUE))
+  result <- c(summ$coef.table[2,c(1,2)],summ$coef.table[1,c(1,2)],summary(summ$lmfit)$r.squared)
+  t(result)
 }
 
 excess.returns <- xts(excess.returns,order.by = as.Date(index(portfolio.data)))
 regressionInfo <- apply(excess.returns, 2, regressionData)
-
-
 ```
+
+
 
 ##a 
 Lets plot the betas of various industry
@@ -88,10 +90,10 @@ betaBars <- barplot(height = betaTable[1,],
                   cex.names = 0.75, xaxt = "n",
                   main = "Plot of beta for various industries",
                   ylab = "Beta",
-                  border = "black", axes = TRUE,width=35)
+                  border = "black", axes = TRUE,width=35,space = 0.8)
 
-text(x = betaBars, y = 0, srt = 45,
-     adj = 1, labels = colnames(betaTable), xpd = TRUE)
+text(x = betaBars, y = -0.1, srt = 90,
+     adj = 1, labels = colnames(betaTable), xpd = TRUE,cex=0.6)
 
 segments(betaBars, betaTable[1,]- betaTable[2,] * 2, betaBars,
          betaTable[1,] + betaTable[2,], lwd = 1.5)
@@ -111,35 +113,78 @@ range(betaTable[1,])
   
 The max, min and mean of the $R^2$ across industries is as below
 ```{r}
-results <- c()
-results[1] <- min(regressionInfo[5,])
-results[2] <- max(regressionInfo[5,])
-results[3] <- mean(regressionInfo[5,])
-names(results) <- c("Min","Max","Mean")
-results
+resultsR2 <- c()
+resultsR2[1] <- min(regressionInfo[5,])
+resultsR2[2] <- max(regressionInfo[5,])
+resultsR2[3] <- mean(regressionInfo[5,])
+names(resultsR2) <- c("Min","Max","Mean")
+resultsR2
 ```
 
 ##c
 ```{r}
-plot(regressionInfo[1,],regressionInfo[3,],xlab="Beta value",ylab="Alpha value")
+plot(regressionInfo[1,],regressionInfo[3,],xlab="Beta value",ylab="Alpha value",main = "data and regression plot of alpha vs beta of all indsustries")
+alphalm <- lm(regressionInfo[3,]~regressionInfo[1,])
+abline(alphalm$coefficients[1],alphalm$coefficients[2],col = "blue")
+
 ```
 
 We can see that for lower beta, we mostly get higher alpha.  
   
-So based on this if we don't take much risk (by having beta less than market beta), we get more return. This goes against CAPM.  
-  
+In CAPM, we expect low beta to have low risk, which means low returns. But in this case, there is high alpha. So there is a chance that the total returns is higher for low beta stocks. This goes against CAPM. 
 
 
 ##Problem 2  
   
 ```{r}
-fiveYearBeta <- matrix(nrow=((2010-1960)/5)+1,ncol=dim(excess.returns)[2])
-for(fiveYearStart in seq(1960,2010,by=5)){
-  excess.5year.returns <- excess.returns[paste0(fiveYearStart,"/",fiveYearStart+4)]
-  fiveYearBeta[((fiveYearStart-1960)/5)+1,] <- apply(excess.5year.returns, 2, regressionData)[1,]
+acfBeta <- function(indsustryBeta){
+  acf_Val <- acf(indsustryBeta,plot = FALSE)
+  acf_Val$acf[2]
 }
 
 
+fiveYearBeta <- matrix(nrow=((2010-1960)/5)+1,ncol=dim(excess.returns)[2])
+fiveYearBeta.Error <- matrix(nrow=((2010-1960)/5)+1,ncol=dim(excess.returns)[2])
+fiveyears.Endpoints <- seq(1960,2010,by=5) 
+for(fiveYearStart in fiveyears.Endpoints){
+  excess.5year.returns <- excess.returns[paste0(fiveYearStart,"/",fiveYearStart+4)]
+  results <- sapply(excess.5year.returns,regressionData)
+  fiveYearBeta[((fiveYearStart-1960)/5)+1,] <- results[1,]
+  fiveYearBeta.Error[((fiveYearStart-1960)/5)+1,] <- results[2,]
+  
+}
+
+fiveYearBeta <- xts(fiveYearBeta,order.by= as.Date(paste(fiveyears.Endpoints,"01","01",sep = "-")))
+fiveYearBeta.Error <- xts(fiveYearBeta.Error,order.by= as.Date(paste(fiveyears.Endpoints,"01","01",sep = "-")))
+colnames(fiveYearBeta) <- colnames(excess.returns)
+colnames(fiveYearBeta.Error) <- colnames(excess.returns)
+
+industry.acf <- apply(fiveYearBeta,2,acfBeta)
+beta.5yearsCor <- barplot(height = industry.acf,
+                  names.arg = colnames(industry.acf),
+                  beside = true, las = 2,
+                  ylim = c(-0.5, 1),
+                  cex.names = 0.75, xaxt = "n",
+                  main = expression(paste("Auto correlation of one lag for industry ",beta[s])),
+                  ylab = expression(rho[1]),
+                  border = "black", axes = TRUE,width=35,space = 0.5)
+text(x = beta.5yearsCor, y = -0.1, srt = 90,
+     adj = 1, labels =colnames(excess.returns), xpd = TRUE,cex=0.6)
 
 ```
 
+
+Some of the industries are almost 0 correlation (like Coal, Cnstr, BusSv). For these industries, the Beta will be totally unstable.  
+  
+The difference across the 5-year periods can explained either due to changes in the true Beta in these industries, or due to sampling error.  
+  
+For example, if we take Coal, the rolling betas and its standard errors can be found below.  
+
+```{r}
+results <- cbind(fiveYearBeta[,"Coal"],fiveYearBeta.Error[,"Coal"])
+results <- c("Coal beta","Coal beta error")
+```
+  
+As you can see, in some time periods, the error is very high. For example, in the 5 year period beginning in 2000, the beta is 0.6773, and the error is 0.421. This is quite significant and can lead to improper correlations.    
+
+  

@@ -1,0 +1,289 @@
+---
+title: "Empirical Methods in Finance - Assignment 3"
+author: "Nitish Ramkumar, Prasanth Kumar, Ian Laker"
+output: pdf_document
+---
+
+Extract the portfolio and risk free data. Apply the date constraints and remove the invalid columns. Sample data is for excess returns is as below. 
+  
+```{r echo=FALSE}
+options(warn = -1)
+suppressMessages(library(xts))
+options(warn = 0)
+
+portfolio.data <- read.csv("48_Industry_Portfolios.csv",header=TRUE,sep = ",",stringsAsFactors = FALSE,skip = 11,nrows = 1086)
+portfolio.data$X <- as.yearmon(as.character(portfolio.data$X),format="%Y%m")
+portfolio.data <- xts(portfolio.data[,-1],order.by = portfolio.data$X)
+
+factors.data <- read.csv("F-F_Research_Data_Factors.csv",header=TRUE,sep = ",",stringsAsFactors = FALSE,skip = 3,nrows=1086)
+factors.data$X <- as.yearmon(as.character(factors.data$X),format="%Y%m")
+factors.data <- xts(factors.data[,-1],order.by = factors.data$X)
+
+#Date and 99 constraints
+portfolio.data <- portfolio.data[index(portfolio.data)>="1960-01-01" & index(portfolio.data)<="2015-12-31",]
+portfolio.invalidColumns <- apply(portfolio.data,2,function(x){sum(x %in% -99.99) > 0})
+portfolio.data <- portfolio.data[,!portfolio.invalidColumns]
+
+factors.data <- factors.data[index(factors.data)>="1960-01-01" & index(factors.data)<="2015-12-31",]
+
+#Calculate Excess Returns
+portfolio.excessReturns <- apply(portfolio.data,2,function(x){t(x - factors.data$RF)})
+```
+
+#Principal Component Analysis#
+##1
+The eigenvalues of the variance-covariance matrix can be calculated using **eigen** R function
+
+```{r echo=FALSE}
+eigen.info <- eigen(cov(portfolio.excessReturns))
+eigen.info$values
+```
+
+The fraction explained by each eigen value can be seen in this graph.  
+  
+```{r echo=FALSE}
+eigen.fractionExplained <- sapply(eigen.info$values,function(x){x/sum(eigen.info$values)})
+barplot(eigen.fractionExplained,names.arg = 1:length(eigen.fractionExplained),main = "Plot of fraction of variance explained by each eigenvalue",xlab = "Eigenvalue",ylab="fraction explained")
+
+```
+
+
+##2a  
+The largest 3 Principal Components explain **69.94\%** of the total variance
+
+```{r echo=FALSE}
+#Take top 3 eigen vectors
+eigen.significantPcVector <- eigen.info$vectors[,c(1,2,3)]
+eigen.significantfraction <- eigen.fractionExplained[c(1,2,3)]
+explainedVal <- sum(eigen.significantfraction)
+
+```
+
+
+##2b     
+The Principial Components can be calculated using this formula    
+    
+  $y_{it} = e_i`r_t = \sum_{j=1}^N e_{ij} r_{jt}$  
+    
+  where $y_{it}$ is the $i^{th}$ principal component at time t.  
+  $e_{ij}$ is the weight of the $j^{th}$ asset in the $i^{th}$ eigenvector.  
+  $r_{jt}$ is the return of the $j^{th}$ asset at time t. 
+
+```{r echo=FALSE}
+
+#multiply weights by the corresponding industry returns
+pcas <- apply(eigen.significantPcVector,2,function(eigenVec){apply(portfolio.excessReturns,1,function(returnsTime){returnsTime%*%eigenVec})})
+colnames(pcas) <- c("PCA1","PCA2","PCA3")
+```
+  
+Mean sample returns for these 3 factor portfolios are
+```{r echo=FALSE}
+pcas.mean <- apply(pcas,2,mean)
+pcas.mean
+```
+
+sample standard deviation for these 3 factor portfolios are
+```{r echo=FALSE}
+pcas.sd <- apply(pcas,2,sd)
+pcas.sd
+```
+  
+Correlation for these 3 factor portfolios are
+```{r echo = FALSE}
+pcas.cor <- cor(pcas)
+pcas.cor
+```
+
+##2c    
+The loadings for each industry in the case will be equal to the weights of the industry in each of the eigen vectors. The formula $\sqrt{{\lambda_i}} e_i$ ($\lambda_i$ is the eigen value and e_i is the eigen vector weights) holds good only if the data is standardized (divided by standard deviation).  
+  
+This can also be retrieved by running a regression of excess returns of the industry with the calculated pcas (performed in the code at the end.)
+  
+If we consider a APT model using these factors, a predicted value is calculated which is plotted against the actual returns value below
+
+```{r echo=FALSE}
+
+#Test to check if regression coefficients match the eigen loadings (in this case it is the weights itself)
+LmOutput <- lm(portfolio.excessReturns[,1] ~ pcas[,1] + pcas[,2] + pcas[,3])
+EigenOutput <- eigen.significantPcVector[1,]
+##LmOutput$coefficients[-1] == EigenOutput
+
+portfolio.meanreturns <- apply(portfolio.excessReturns,2,mean)
+
+portfolio.indPredictedreturns <- sapply(1:dim(eigen.significantPcVector)[2],function(pc){
+    eigen.significantPcVector[,pc]*pcas.mean[pc]
+})
+portfolio.predictedreturns <- apply(portfolio.indPredictedreturns,1,sum)
+
+plot(portfolio.meanreturns,portfolio.predictedreturns,ylim=c(0,1),xlim=c(0,1),xlab="Actual returns", ylab="Predicted Returns")
+abline(0,1,col="red")  
+
+```
+  
+Even though few points are close to the 45 degree line (i.e. predicted value is close to the actual value), there is a good dispersion away from the 45 degree line. This shows that the considered APT model doesn't do a good job of predicting the returns.   
+
+##2d 
+Cross sectional $R^2$ = **-0.5738903**
+
+```{r echo=FALSE}
+numerator <- var(portfolio.meanreturns - portfolio.predictedreturns)
+Rcrosssection <- 1 - (numerator/var(portfolio.meanreturns))
+```
+
+
+##3a      
+The plot of variance explained by every eigen value for the 25 F-F portfolios is as below
+
+```{r echo=FALSE}
+portfolio.25.data <- read.csv("25_Portfolios_5x5.csv",header=TRUE,sep = ",",stringsAsFactors = FALSE,skip = 19,nrows = 1086)
+portfolio.25.data$X <- as.yearmon(as.character(portfolio.25.data$X),format="%Y%m")
+portfolio.25.data <- xts(portfolio.25.data[,-1],order.by = portfolio.25.data$X)
+
+#Date and 99 constraints
+portfolio.25.data <- portfolio.25.data[index(portfolio.25.data)>="1960-01-01" & index(portfolio.25.data)<="2015-12-31",]
+portfolio.25.invalidColumns <- apply(portfolio.25.data,2,function(x){sum(x %in% -99.99) > 0})
+portfolio.25.data <- portfolio.25.data[,!portfolio.25.invalidColumns]
+portfolio.25.excessReturns <- apply(portfolio.25.data,2,function(x){t(x - factors.data$RF)})
+
+eigen.25.Info <- eigen(cov(portfolio.25.excessReturns))
+eigen.25.fractionExplained <- sapply(eigen.25.Info$values,function(x){x/sum(eigen.25.Info$values)})
+barplot(eigen.25.fractionExplained,names.arg = 1:length(eigen.25.fractionExplained),main = "Plot of fraction of variance explained by each eigenvalue",xlab = "Eigenvalue",ylab="fraction explained")
+
+```
+
+##3b  
+```{r echo=FALSE}
+eigen.25.pcaInfo <- princomp(cov(portfolio.25.excessReturns))
+sum <- summary(eigen.25.pcaInfo)
+```
+The first 4 PCA components explains as much as 99.5% of the data (information got out of the cumulative proportion in the summary view of princomp. So 4 factors should suffice to explain the average industry returns.
+
+
+#Arbitrage Pricing in Factor Models#
+
+##1a 
+
+The exposures of portfolio A involves 0.5 unit exposure to factor 1 and 0.75 unit exposure to factor 2. So to get the arbitrage opportunity,  
+  
+We should go long the portfolio and short the assets which replicates the portfolio exposure (0.5 unit of factor 1 and 0.75 unit of factor 2).  
+  
+By doing this we will get 1% extra return (profit) out of the portfolio.  
+  
+##1b    
+  
+$\delta$ should be equal to -1\% to avoid arbitrage opportunities.  
+  
+Expected value of ${R^e}_{A,t}$ = $0.5 E(R_{f1,t}) + 0.75 E(R_{f2,t})$  
+
+= $(0.5)(6\%) + (0.75)(-2\%)$  = **1.5\%**   
+      
+  
+  
+**R Code**
+```{r eval=FALSE}
+
+#Data Retrieval
+suppressMessages(library(xts))
+portfolio.data <- read.csv("48_Industry_Portfolios.csv",header=TRUE,sep = ","
+                           ,stringsAsFactors = FALSE,skip = 11,nrows = 1086)
+portfolio.data$X <- as.yearmon(as.character(portfolio.data$X),format="%Y%m")
+portfolio.data <- xts(portfolio.data[,-1],order.by = portfolio.data$X)
+factors.data <- read.csv("F-F_Research_Data_Factors.csv",header=TRUE,sep = ","
+                         ,stringsAsFactors = FALSE,skip = 3,nrows=1086)
+factors.data$X <- as.yearmon(as.character(factors.data$X),format="%Y%m")
+factors.data <- xts(factors.data[,-1],order.by = factors.data$X)
+
+#Date and 99 constraints
+portfolio.data <- portfolio.data[index(portfolio.data)>="1960-01-01" &
+                                   index(portfolio.data)<="2015-12-31",]
+portfolio.invalidColumns <- apply(portfolio.data,2
+                                  ,function(x){sum(x %in% -99.99) > 0})
+portfolio.data <- portfolio.data[,!portfolio.invalidColumns]
+factors.data <- factors.data[index(factors.data)>="1960-01-01" 
+                             & index(factors.data)<="2015-12-31",]
+
+#Calculate Excess Returns
+portfolio.excessReturns <- apply(portfolio.data,2,function(x){t(x - factors.data$RF)})
+
+#1A
+eigen.info <- eigen(cov(portfolio.excessReturns))
+eigen.info$values
+
+#1B
+eigen.fractionExplained <- sapply(eigen.info$values,
+                                  function(x){x/sum(eigen.info$values)})
+barplot(eigen.fractionExplained,names.arg = 1:length(eigen.fractionExplained)
+        ,main = "Plot of fraction of variance explained by each eigenvalue",
+        xlab = "Eigenvalue",ylab="fraction explained")
+
+#2A
+#Take top 3 eigen vectors
+eigen.significantPcVector <- eigen.info$vectors[,c(1,2,3)]
+eigen.significantfraction <- eigen.fractionExplained[c(1,2,3)]
+sum(eigen.significantfraction)
+
+#2B
+
+#multiply weights by the corresponding industry returns
+pcas <- apply(eigen.significantPcVector,2,function(eigenVec)
+  {apply(portfolio.excessReturns,1,function(returnsTime){returnsTime%*%eigenVec})})
+colnames(pcas) <- c("PCA1","PCA2","PCA3")
+
+pcas.mean <- apply(pcas,2,mean)
+pcas.sd <- apply(pcas,2,sd)
+pcas.cor <- cor(pcas)
+
+#2C
+#Test to check if regression coefficients match the eigen loadings 
+##(in this case it is the weights itself)
+LmOutput <- lm(portfolio.excessReturns[,1] ~ pcas[,1] + pcas[,2] + pcas[,3])
+EigenOutput <- eigen.significantPcVector[1,]
+##LmOutput$coefficients[-1] == EigenOutput
+
+#calculate predicted returns by using top 3 PCA loadings and values
+portfolio.meanreturns <- apply(portfolio.excessReturns,2,mean)
+portfolio.indPredictedreturns <- sapply(1:dim(eigen.significantPcVector)[2],function(pc){
+    eigen.significantPcVector[,pc]*pcas.mean[pc]
+})
+portfolio.predictedreturns <- apply(portfolio.indPredictedreturns,1,sum)
+plot(portfolio.meanreturns,portfolio.predictedreturns,ylim=c(0,1),xlim=c(0,1)
+     ,xlab="Actual returns", ylab="Predicted Returns")
+abline(0,1,col="red")  
+
+#2D
+#RCross section calculation
+numerator <- var(portfolio.meanreturns - portfolio.predictedreturns)
+Rcrosssection <- 1 - (numerator/var(portfolio.meanreturns))
+Rcrosssection
+
+#3A
+#25 FF portfolios
+portfolio.25.data <- read.csv("25_Portfolios_5x5.csv",header=TRUE,sep = ","
+                              ,stringsAsFactors = FALSE,skip = 19,nrows = 1086)
+portfolio.25.data$X <- as.yearmon(as.character(portfolio.25.data$X),format="%Y%m")
+portfolio.25.data <- xts(portfolio.25.data[,-1],order.by = portfolio.25.data$X)
+
+#Date and 99 constraints
+portfolio.25.data <- portfolio.25.data[index(portfolio.25.data)>="1960-01-01" 
+                                       & index(portfolio.25.data)<="2015-12-31",]
+portfolio.25.invalidColumns <- apply(portfolio.25.data,2,
+                                     function(x){sum(x %in% -99.99) > 0})
+portfolio.25.data <- portfolio.25.data[,!portfolio.25.invalidColumns]
+portfolio.25.excessReturns <- apply(portfolio.25.data,2
+                                    ,function(x){t(x - factors.data$RF)})
+
+eigen.25.Info <- eigen(cov(portfolio.25.excessReturns))
+eigen.25.fractionExplained <- sapply(eigen.25.Info$values
+                                     ,function(x){x/sum(eigen.25.Info$values)})
+barplot(eigen.25.fractionExplained,names.arg = 1:length(eigen.25.fractionExplained)
+        ,main = "Plot of fraction of variance explained by each eigenvalue"
+        ,xlab = "Eigenvalue",ylab="fraction explained")
+
+
+#3B
+eigen.25.pcaInfo <- princomp(cov(portfolio.25.excessReturns))
+sum <- summary(eigen.25.pcaInfo)
+
+```
+
+

@@ -97,39 +97,39 @@ pcas.cor
 ##2c    
 The loadings for each industry in the case will be equal to the weights of the industry in each of the eigen vectors. The formula $\sqrt{{\lambda_i}} e_i$ ($\lambda_i$ is the eigen value and e_i is the eigen vector weights) holds good only if the data is standardized (divided by standard deviation).  
   
-For calculating this predicted value, the demeaned value of actual data should be used to calculate the demeaned prediction. After that we need to add the mean of the actual data to get the final prediction. This prediction can be compared with the actual returns.  
+For calculating this predicted value, the PCA value is used along with the loading factor (weights in this case). This is done for every industry.
 
 ```{r echo=FALSE}
 
-#demean the portfolio returns
-actual.demeaned <- apply(portfolio.excessReturns,2,function(x){x - mean(x)})
-actual.avg <- apply(portfolio.excessReturns,2,mean)
+#Get the actual average of all industries
+portfolio.actual.avg <- apply(portfolio.excessReturns,2,mean)
 
 #use that to calculate predicted value
-predicted.demeaned <- actual.demeaned%*%eigen.significantPcVector%*%t(  eigen.significantPcVector)
+portfolio.predicted <- portfolio.actual.avg%*%eigen.significantPcVector%*%t(eigen.significantPcVector)
 
-#now add back the mean, to get the predicted(with mean in it)
-predicted.normal <- sapply(1:dim(predicted.demeaned)[2],function(x){predicted.demeaned[,x] + mean(portfolio.excessReturns[,x])})
 
 #take average across time 
-predicted.normal.avg <- apply(predicted.normal,2,mean)
+portfolio.predicted.avg <- apply(portfolio.predicted,2,mean)
 
 #plot actual vs predicted 
-plot(actual.avg,predicted.normal.avg,xlab="Actual returns",ylab="Predicted Returns",xlim = c(0,2),ylim=c(0,2),main="Plot between actual portfolio returns and predicted returns from APT model")
+plot(portfolio.actual.avg,portfolio.predicted.avg,xlab="Actual returns",ylab="Predicted Returns",xlim = c(0,1),ylim=c(0,1),main="Plot between actual portfolio returns and predicted returns from APT model")
 abline(0,1,col="red")  
 
 ```
   
-All the points are on the 45 degree line. On an average across the entire time period, we can see that the Principal components can predict the actual data with high accuracy.      
+Though some points were close to the 45 degree line, most of the points were dispersed away from the 45 degree line.  
       
 The loading was also retrieved out of regression and compared with the loading out of eigen vectors and were found to be same (testing in the code appended at the end)
 
 ##2d 
-Cross sectional $R^2$ = **1.0**. As mentioned in previous question, as the model is able to completely explain the actual data on an average across time.  
+Cross sectional $R^2$ = **-0.5738903**. $R^2$ is negative because we don't consider an $\alpha$ (intercept) in this case. Due to this reason,  this formula is not valid calculation method for $R^2$ in this case.  
+  
+Generally we expect $\alpha$ to be equal to 0, as the factors are traded. But due to the negative $R^2$, in this we can say that $\alpha$ is not 0.
 
 ```{r echo=FALSE}
-numerator <- var(actual.avg - predicted.normal.avg)
-Rcrosssection <- 1 - (numerator/var(actual.avg))
+numerator <- var(portfolio.actual.avg - portfolio.predicted.avg)
+Rcrosssection <- 1 - (numerator/var(portfolio.actual.avg))
+
 ```
 
 
@@ -238,25 +238,27 @@ pcas.cor <- cor(pcas)
 #2C
 #Test to check if regression coefficients match the eigen loadings 
 ##(in this case it is the weights itself)
-LmOutput <- lm(portfolio.excessReturns[,1] ~ pcas[,1] + pcas[,2] + pcas[,3])
+summary(LmOutput) <- lm(portfolio.excessReturns[,2] ~ pcas[,1] + pcas[,2] + pcas[,3])
 EigenOutput <- eigen.significantPcVector[1,]
 ##LmOutput$coefficients[-1] == EigenOutput
 
-#calculate predicted returns by using top 3 PCA loadings and values
-portfolio.meanreturns <- apply(portfolio.excessReturns,2,mean)
-portfolio.indPredictedreturns <- sapply(1:dim(eigen.significantPcVector)[2],function(pc){
-    eigen.significantPcVector[,pc]*pcas.mean[pc]
-})
-portfolio.predictedreturns <- apply(portfolio.indPredictedreturns,1,sum)
-plot(portfolio.meanreturns,portfolio.predictedreturns,ylim=c(0,1),xlim=c(0,1)
-     ,xlab="Actual returns", ylab="Predicted Returns")
-abline(0,1,col="red")  
+#Get the actual average of all industries
+portfolio.actual.avg <- apply(portfolio.excessReturns,2,mean)
+#use that to calculate predicted value
+portfolio.predicted <- portfolio.actual.avg%*%eigen.significantPcVector%*%
+  t(eigen.significantPcVector)
+#take average across time 
+portfolio.predicted.avg <- apply(portfolio.predicted,2,mean)
+#plot actual vs predicted 
+plot(portfolio.actual.avg,portfolio.predicted.avg,xlab="Actual returns",
+     ylab="Predicted Returns",xlim = c(0,1),ylim=c(0,1),
+     main="Plot between actual portfolio returns and predicted returns from APT model")
+abline(0,1,col="red")   
 
 #2D
 #RCross section calculation
-numerator <- var(portfolio.meanreturns - portfolio.predictedreturns)
-Rcrosssection <- 1 - (numerator/var(portfolio.meanreturns))
-Rcrosssection
+numerator <- var(portfolio.actual.avg - portfolio.predicted.avg)
+Rcrosssection <- 1 - (numerator/var(portfolio.actual.avg))
 
 #3A
 #25 FF portfolios

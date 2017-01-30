@@ -24,6 +24,7 @@ suppressMessages(library(xts))
 options(warn = 0)
 
 # Retrieve Data
+
 portfolio.data <- read.csv("49_Industry_Portfolios.csv",header=TRUE,sep = ",",stringsAsFactors = FALSE,skip = 11,nrows = 1085)
 portfolio.data$X <- as.Date(paste(floor(as.numeric(portfolio.data$X)/100),as.numeric(portfolio.data$X) %% 100,"01",sep = "-"))
 portfolio.data <- xts(portfolio.data[,-1],order.by = portfolio.data$X)

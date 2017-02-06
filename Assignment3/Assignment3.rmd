@@ -24,6 +24,8 @@ portfolio.data <- portfolio.data[index(portfolio.data)>="1960-01-01" & index(por
 portfolio.invalidColumns <- apply(portfolio.data,2,function(x){sum(x %in% -99.99) > 0})
 portfolio.data <- portfolio.data[,!portfolio.invalidColumns]
 
+colnames(portfolio.data)
+
 factors.data <- factors.data[index(factors.data)>="1960-01-01" & index(factors.data)<="2015-12-31",]
 
 #Calculate Excess Returns

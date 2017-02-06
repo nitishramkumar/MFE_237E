@@ -140,6 +140,11 @@ lambdaVarShanken <- lambdaVar + sandwich%*%cov(residuals)%*%t(sandwich)*((t(lamb
                                 %*%cov(allFactors)%*%lambda.OLS.2)[1,1])/T
 sqrt(diag(lambdaVarShanken))
 ```
+ 
+We notice a bigger change in the intercept value as compared to the factors because 
+the shanken correction is applied primarily on the errors covariance matrix and 
+not on the factors covariance matrix
+
 
 *R-squared*
 ```{r echo=FALSE}

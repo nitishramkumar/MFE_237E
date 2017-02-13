@@ -106,11 +106,19 @@ sqrt(SharpeRatioSq.Max)
 ```
 
 #4 
-Maximum sharpe ratio squared of stocks and market =  Maximum sharpe ratio square of stocks only + sharpe ratio square of market
+Maximum sharpe ratio squared of stocks and market =  Maximum sharpe ratio square of hedged stocks + sharpe ratio square of market
+ 
+Max Sharpe Ratio = $(\bar{R}^e)'{\Sigma_F}^{-1} \bar{R}^e + (\alpha)' {\Sigma_e}^{-1} \alpha$  
+  
+Where first term is sharpe ratio of factor portfolio (in this case market) and second term is sharpe ratio of alphas.
  
 ```{r echo=FALSE}
 SharpeRatio.Market <- 1/3
+```
+```{r}
 SharpeRatio.Combined <- sqrt(SharpeRatioSq.Max + SharpeRatio.Market^2)
+```
+```{r echo = FALSE}
 SharpeRatio.Combined
 ```
 

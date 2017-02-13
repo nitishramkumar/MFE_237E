@@ -97,7 +97,7 @@ $var({R^e}_{MVE}) = (w^{MVE})' \Omega w^{MVE} = k^2 (\bar{R}^e)' \Omega^{-1} \Om
   
   
 So, the Sharpe Ratio squared for MVE is  
-${SR^2}_{MVE}  =  \frac{{\bar{R}^e}_{MVE}}{var({R^e}_{MVE})} = (\bar{R}^e)' \Omega^{-1} \bar{R}^e$    
+${SR^2}_{MVE}  =  \frac{{(\bar{R}^e}_{MVE})^2}{var({R^e}_{MVE})} = (\bar{R}^e)' \Omega^{-1} \bar{R}^e$    
   
 *Max Sharpe Ratio Value*  
 ```{r echo=FALSE}

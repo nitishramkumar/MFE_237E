@@ -18,10 +18,12 @@ Avg
 ```{r}
 #Standard Deviation
 Variance_matrix <- matrix(c(0.1^2,0,0,0,0.15^2,0,0,0,0.05^2),nrow=3)
+betas <- c(0.9,1.2,1)
+
 Variance.Mkt <- 0.15^2
-Variance.1 <- Variance.Mkt +  Variance_matrix[1,1] 
-Variance.2 <- Variance.Mkt +  Variance_matrix[2,2]
-Variance.3 <- Variance.Mkt +  Variance_matrix[3,3]
+Variance.1 <- betas[1]^2 * Variance.Mkt +  Variance_matrix[1,1] 
+Variance.2 <- betas[2]^2 * Variance.Mkt +  Variance_matrix[2,2]
+Variance.3 <- betas[3]^2 * Variance.Mkt +  Variance_matrix[3,3]
 Sd <- c(sqrt(Variance.1),sqrt(Variance.2),sqrt(Variance.3))
 Sd
 ```
@@ -99,54 +101,60 @@ SharpeRatio.Combined
 
 ##5a
 ```{r}
-Avg.Hedged.Market <- c(Avg.Mkt,Avg.Hedged)
-Variance_matrix_combined <- rbind(c(Variance.Mkt,0,0,0),cbind(rep(0,3),Variance_matrix))
+AllReturns <- c(Avg,Avg.Mkt)
 
-SharpeRatio.Max.Combined <- t(Avg.Hedged.Market)%*%chol2inv(chol(Variance_matrix_combined))%*%Avg.Hedged.Market
+#Calculate systematic variance and covariance (Betai * Betaj * market variance)
+betas5 <- c(betas,1)
+systematicVar.5 <- (betas5%*%t(betas5))*Variance.Mkt
+fullCovarianceMatrix.5 <- rbind(cbind(Variance_matrix,0),0) + systematicVar.5
+
+SharpeRatio.Max.Combined <- t(AllReturns)%*%chol2inv(chol(fullCovarianceMatrix.5))%*%AllReturns
 Sd <- 0.15
 k <- Sd/sqrt(SharpeRatio.Max.Combined)
 
-weights_combined <- (chol2inv(chol(Variance_matrix_combined))%*%Avg.Hedged.Market) * as.numeric(k)
+weights_combined <- (chol2inv(chol(fullCovarianceMatrix.5))%*%AllReturns) * as.numeric(k)
 weights_combined
 ```
 
 ##5b
 ```{r}
 #Mean
-Mean5 <- Avg.Hedged.Market%*%weights_combined
+Mean5 <- AllReturns%*%weights_combined
 
 #SD
-Sd5 <- sqrt(t(weights_combined)%*%Variance_matrix_combined%*%weights_combined)
+Sd5 <- sqrt(t(weights_combined)%*%fullCovarianceMatrix.5%*%weights_combined)
 
 #Sharpe Ratio
-Mean5/Sd5
+SR5 <- Mean5/Sd5
 
+output <- c(Mean5,Sd5,SR5)
+names(output) <- c("Mean","SD","Sharpe Ratio")
+output
 ```
 
 ##6
 #a
 ```{r}
-betas <- c(0.9,1.2,1)
-mimick.Return <- ((betas - mean(betas))/(length(betas)*var(betas)))%*%Avg
-mimick.Sd <- Variance.Mkt^0.5
+mimick.Weights <- ((betas - mean(betas))/(length(betas)*var(betas)))
+mimick.Return <- mimick.Weights%*%Avg
+
+systematicVar.stocks <- (betas%*%t(betas))*Variance.Mkt
+fullCovarianceMatrix.stocks <- systematicVar.stocks +Variance_matrix
+
+mimick.Sd <- sqrt(t(mimick.Weights)%*%fullCovarianceMatrix.stocks%*%mimick.Weights)
 mimick.sharpe <- mimick.Return/mimick.Sd
 c(mimick.Return,mimick.Sd,mimick.sharpe)
 ```
 
 #b
 ```{r}
-corr.mimick.market <- mimick.Return * var(betas)
-corr.mimick.market
+cor.mimick.market <- mimick.Weights%*%(betas*sqrt(Variance.Mkt)/sqrt(diag(fullCovarianceMatrix.stocks)))
+cor.mimick.market
 ```
 
 #c
 ```{r}
-var.matrix <- Variance_matrix 
-var.matrix[1,1] = var.matrix[1,1] + Variance.Mkt
-var.matrix[2,2] = var.matrix[2,2] + Variance.Mkt
-var.matrix[3,3] = var.matrix[3,3] + Variance.Mkt
-
-eigens <- eigen(cov(var.matrix))
+eigens <- eigen(fullCovarianceMatrix.stocks)
 eigens$values/sum(eigens$values)
 
 ```
@@ -157,5 +165,5 @@ eigens$vectors
 ```
 
 #e
-The first PCA is the market. As it can be noticed, though the first PCA explains 66.7\%, the second and third PCA still explains a significant portion of the variance. Also the second PCA is close to a long short strategy, which means that without any exposure to market, it is explaining variance of the returns.  
+The first PCA is the market. As it can be noticed, though the first PCA explains 80.81\%, the second and third PCA still explains a significant portion of the variance. Also the second PCA is close to a long short strategy, which means that without any exposure to market, it is explaining variance of the returns.  
   

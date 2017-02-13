@@ -124,6 +124,7 @@ SharpeRatio.Combined
 
 #5
 ##5a
+*Weights of stocks and market to achieve maximum sharpe ratio and with expected volatility*
 ```{r echo=FALSE}
 AllReturns <- c(Avg,Avg.Mkt)
 
@@ -137,7 +138,7 @@ Sd <- 0.15
 k <- Sd/sqrt(SharpeRatio.Max.Combined)
 
 weights_combined <- (chol2inv(chol(fullCovarianceMatrix.5))%*%AllReturns) * as.numeric(k)
-names(weights_combined) <- c("Stock1","Stock2","Stock3","Market")
+row.names(weights_combined) <- c("Stock1","Stock2","Stock3","Market")
 weights_combined
 ```
 
@@ -212,8 +213,9 @@ loadings
 ```
 
 ##6e
-The first PCA is the market. As it can be noticed, though the first PCA explains 80.81\%, the second and third PCA still explains a significant portion of the variance. This is due to the presence of an intercept. Also the second PCA is close to a long short strategy, which means that without any exposure to market, it is explaining variance of the returns.    
+The PCA Analysis shows that the 3 facts are significant in explaining the variance. The factor mimicking portfolio obtained through Fama-Macbeth doesn't completely resemble the market due to the presence of the intercept. It resembles the second PCA component which is a long-short portfolio (which has no correlation with market). Due to this difference with the market portfolio, the correlation doesn't come out to be 1.  
   
+If we do the Fama-Macbeth regression without the intercept, the factor mimicking portfolio will resemble the market portfolio and hence the correlation will be higher than this correlation.  
   
 #R code
 ```{r eval=FALSE}

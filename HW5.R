@@ -61,7 +61,7 @@ betas=c(0.9,1.2,1)
 #a
 weights_mimick = (1/3)/(mean(betas^2)-mean(betas)^2)*(betas-mean(betas))
 meanreturn_mimick = weights_mimick%*%ret_stocks
-sd_mimick = sqrt(t(weights)%*%covar_matrix_stocks%*%weights)
+sd_mimick = sqrt(t(weights_mimick)%*%covar_matrix_stocks%*%weights_mimick)
 sharpe_mimick = meanreturn_mimick/sd_mimick
 
 #b

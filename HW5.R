@@ -32,9 +32,9 @@ sharpe_a3_hedged = alpha_a3_meane/alpha_a3_sde
 
 #portfolio of the assets 
 #problem3
-covar_matrix = matrix(c(0.1^2,0,0,0,0.15^2,0,0,0,0.05^2),nrow=3)
+covar_matrix_resid = matrix(c(0.1^2,0,0,0,0.15^2,0,0,0,0.05^2),nrow=3)
 Re = c(alpha_a1_meane,alpha_a2_meane,alpha_a3_meane)
-max_sharperatio_3 = sqrt(t(Re)%*%solve(covar_matrix)%*%Re)
+max_sharperatio_3 = sqrt(t(Re)%*%solve(covar_matrix_resid)%*%Re)
 
 #portfolio including market portfolio
 #problem4
@@ -59,17 +59,18 @@ ret_stocks=c(samplemeane_a1,samplemeane_a2,samplemeane_a3)
 covar_matrix_stocks = matrix(c(sd_a1^2,0.9*1.2*0.15^2,0.9*1*0.15^2,1.2*0.9*0.15^2,sd_a2^2,1.2*1*0.15^2,1*0.9*0.15^2,1*1.2*0.15^2,sd_a3^2),nrow=3)
 betas=c(0.9,1.2,1)
 #a
-weights_mimick = (1/3)/var(betas)*(betas-mean(betas))
+weights_mimick = (1/3)/(mean(betas^2)-mean(betas)^2)*(betas-mean(betas))
 meanreturn_mimick = weights_mimick%*%ret_stocks
 sd_mimick = sqrt(t(weights)%*%covar_matrix_stocks%*%weights)
 sharpe_mimick = meanreturn_mimick/sd_mimick
 
 #b
-cor_mimick_market = (weights_mimick%*%c(0.9*0.15/sd_a1,1.2*0.15/sd_a2,1*0.15/sd_a3))
+cor_mimick_market = (weights_mimick%*%c(0.9*0.15^2,1.2*0.15^2,1*0.15^2))/sd_mimick/0.15
 
 #c
 eig = eigen(covar_matrix_stocks)
 var_pcas = eig$values/sum(eig$values)
+
 
 #d
 portfolioweights_pc = eig$vectors

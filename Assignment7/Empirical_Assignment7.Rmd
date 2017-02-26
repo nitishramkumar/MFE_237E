@@ -1,0 +1,241 @@
+---
+title: "Empirical Assignment 7"
+author: "Nitish Ramkumar, Ian Laker, PrasanthKumar"
+output: pdf_document
+---
+
+```{r echo=FALSE}
+suppressMessages(library(xts))
+suppressMessages(library(readxl))
+setwd("C:/_UCLA/237E_Empirical/Assigments/Assignment7")
+
+PPI.data <- read_excel("PPIFGS.xls")
+PPI <- xts(PPI.data$VALUE,as.Date(PPI.data$DATE))
+```
+
+#1
+
+The graphs of the 4 situations are as belw
+```{r echo=FALSE}
+suppressMessages(library(MTS))
+par(mfrow=c(2,2))
+
+plot(PPI,main="PPI levels")
+abline(h=mean(PPI))
+
+plot(diff(PPI),main="difference between PPI levels")
+abline(h = mean(diff(PPI),na.rm=T))
+
+plot(log(PPI), main="log of PPI levels")
+abline(h = mean(log(PPI),na.rm=T))
+
+plot(diff(log(PPI)),main="difference in log of PPI levels")
+abline(h = mean(diff(log(PPI)),na.rm=T))
+par(mfrow=c(1,1))
+```
+
+
+#2
+From the graph, we can see that the mean reversion properly happens for differences in PPI levels and difference in log of PPI levels. The faster amongst the two is the **difference in log of PPI levels**.   
+  
+So $y_t$ = diff(log(PPI))     
+  
+This might change based on next question.
+
+#3
+```{r echo=FALSE}
+par(mfrow=c(1,2))
+acf(diff(log(PPI))[-1],lag.max = 12)
+acf(diff(PPI)[-1],lag.max = 12)
+par(mfrow=c(1,1))
+```
+From the graph, we can see that the acf drops faster for diff(PPI) as compared to diff(log(PPI)). So we can change the $y_t$ = log(PPI). 0 and 1 are the significant lags. These value will be the lag for MA model.
+
+#4
+```{r echo=FALSE}
+#pacf(PPI,lag.max = 12)
+pacf(diff(PPI)[-1],lag.max = 12)
+#pacf(log(PPI),lag.max = 12)
+#pacf(diff(log(PPI))[-1],lag.max = 12)
+```
+The PACF graph confirms that 1,3 lags would be ideal values for the AR model.
+
+#5
+The various models which can be used are as below:  
+Model 1: p=1, q=0  
+Model 2: p=3, q=0  
+Model 3: p=1, q=1  
+Model 4: p=3, q=1  
+
+##Model 1
+###Coefficients and stationary check
+```{r echo=FALSE}
+arma1 <- arima(diff(PPI),order=c(1,0,0),method = "ML")
+arma1$coef
+```
+As $\phi_1$ is <1, it is stationary  
+
+###Residual Plot
+```{r echo=FALSE}
+plot(arma1$residuals,main="Plot of residuals of ARIMA(1,0,0)")
+```
+
+###Ljung-Box
+```{r echo=FALSE}
+Box.test(arma1$residuals,8,"Ljung-Box")
+```
+The p value for 8 lag Ljung box test is 0.1161, so we can't reject the null hypothesis at 10\% confidence and can'tconclude that all auto-correlations is 0.
+
+```{r echo=FALSE}
+Box.test(arma1$residuals,12,"Ljung-Box")
+```
+The p value for 12 lag Ljung box test is 0.017, so we can reject the null hypothesis at 2\% confidence, and conclude that all auto-correlations is 0 for that confidence,
+
+###AIC/BIC
+```{r echo=FALSE}
+choose.factor <- matrix(nrow=4,ncol=2)
+colnames(choose.factor) <- c("AIC","BIC")
+row.names(choose.factor) <- c("Model1","Model2","Model3","Model4")
+
+arma1$aic
+BIC(arma1)
+choose.factor[1,] <- c(arma1$aic,BIC(arma1))
+```
+
+##Model 2
+
+###Coefficients and stationary proof
+```{r echo=FALSE}
+arma2 <- arima(diff(PPI),order=c(3,0,0),method = "ML")
+coefs2 <- arma2$coef
+coefs2
+
+#Stationary check
+roots <- polyroot(c(1,-coefs2[1],-coefs2[2],-coefs2[3]))
+characteristic <- 1/roots
+Mod(characteristic)
+```
+As all the characteristic roots are <1, this is stationary
+
+###Residual plot
+```{r echo=FALSE}
+plot(arma2$residuals,main="Plot of residuals of ARIMA(3,0,0)")
+```
+
+###Ljung-Box
+```{r echo=FALSE}
+Box.test(arma2$residuals,8,"Ljung-Box")
+```
+The p value for 8 lag Ljung box test is considerable (0.4337) for the 8th lag, so we can't reject the null hypothesis and can't conclude that all auto-correlations is 0.
+
+```{r echo=FALSE}
+Box.test(arma2$residuals,12,"Ljung-Box")
+```
+The p value for 12 lag Ljung box test is 0.08, so we can reject the null hypothesis at 10\% confidence, and conclude that all auto-correlations is 0 for that confidence
+
+###AIC/BIC
+```{r echo=FALSE}
+arma2$aic
+BIC(arma2)
+choose.factor[2,] <- c(arma2$aic,BIC(arma2))
+```
+
+##Model 3
+###Coefficients and stationary proof
+```{r echo=FALSE}
+arma3 <- arima(diff(PPI),order=c(1,0,1),method = "ML")
+arma3$coef
+```
+For ARMA model, the solutions of the AR model should lie outside the unit circle. This is not true in this case. So this is not stationary.  
+
+###Residual plot
+```{r echo=FALSE}
+plot(arma3$residuals,main="Plot of residuals of ARIMA(1,0,1)")
+```
+
+###Ljung-Box
+```{r echo=FALSE}
+Box.test(arma3$residuals,8,"Ljung-Box")
+```
+The p value for 8 lag Ljung box test is 0.1523 for 8 lags, so we can't reject the null hypothesis at 10\% confidence, and can't conclude that all auto-correlations is 0 for that confidence
+
+```{r echo=FALSE}
+Box.test(arma3$residuals,12,"Ljung-Box")
+```
+The p value for 12 lag Ljung box test is 0.024, so we can reject the null hypothesis at 10\% confidence, and conclude that all auto-correlations is 0 for that confidence
+
+###AIC/BIC
+```{r echo=FALSE}
+arma3$aic
+BIC(arma3)
+choose.factor[3,] <- c(arma3$aic,BIC(arma3))
+```
+
+##Model 4
+###Coefficients and stationary check
+```{r echo=FALSE}
+arma4 <- arima(diff(PPI),order=c(3,0,1),method = "ML")
+coefs4 <- arma4$coef
+
+#Stationary check
+roots <- polyroot(c(1,-coefs4[1],-coefs4[2],-coefs4[3]))
+characteristic <- 1/roots
+Mod(characteristic)
+```
+For ARMA model, the solutions of the AR model should lie outside the unit circle. This is not true in this case. So this is not stationary.
+
+###Residual Plot
+```{r echo=FALSE}
+plot(arma4$residuals,main="Plot of residuals of ARIMA(3,0,1)")
+```
+
+###Ljung-Box
+```{r echo=FALSE}
+Box.test(arma4$residuals,8,"Ljung-Box")
+```
+The p value for 8 lag Ljung box test is 0.5158 for 8 lags, so we can't reject the null hypothesis at 10\% confidence, and can't conclude that all auto-correlations is 0 for that confidence
+
+```{r echo=FALSE}
+Box.test(arma4$residuals,12,"Ljung-Box")
+```
+The p value for 12 lag Ljung box test is 0.13, so we can't reject the null hypothesis at 10\% confidence, and can't conclude that all auto-correlations is 0 for that confidence  
+
+###AIC/BIC
+```{r echo=FALSE}
+arma4$aic
+BIC(arma4)
+choose.factor[4,] <- c(arma4$aic,BIC(arma4))
+```
+
+##Choice between models
+If we see the values of AIC/BIC, we can see the Model 4 (ARMA(3,0,1)) is the best model
+```{r echo=FALSE}
+names(choose.factor) <- c("Model1","Model2","Model3","Model4")
+choose.factor
+```
+
+#6
+```{r echo=FALSE}
+suppressMessages(library("forecast"))
+arma1.reest <- Arima(diff(PPI)[index(diff(PPI))<"2006-01-01",],order=c(1,0,0),method = "ML")
+arma2.reest <- Arima(diff(PPI)[index(diff(PPI))<"2006-01-01",],order=c(3,0,0),method = "ML")
+arma3.reest <- Arima(diff(PPI)[index(diff(PPI))<"2006-01-01",],order=c(1,0,1),method = "ML")
+arma4.reest <- Arima(diff(PPI)[index(diff(PPI))<"2006-01-01",],order=c(3,0,0),method = "ML")
+
+true.value <- diff(PPI)[index(diff(PPI))>="2006-01-01",]
+
+arma1.forecasted.value <- forecast(arma1.reest,length(true.value))$mean
+arma2.forecasted.value <- forecast(arma2.reest,length(true.value))$mean
+arma3.forecasted.value <- forecast(arma3.reest,length(true.value))$mean
+arma4.forecasted.value <- forecast(arma4.reest,length(true.value))$mean
+
+mspes <- c()
+mspes[1] <- sum((coredata(arma1.forecasted.value) - true.value)^2)/(length(true.value))
+mspes[2] <- sum((coredata(arma2.forecasted.value) - true.value)^2)/(length(true.value))
+mspes[3] <- sum((coredata(arma3.forecasted.value) - true.value)^2)/(length(true.value))
+mspes[4] <- sum((coredata(arma4.forecasted.value) - true.value)^2)/(length(true.value))
+
+#Random walk- forecast value is same as last value
+randomWalk.forecasted.value <- rep(diff(PPI)["2005-10-01"],length(true.value))
+mspe.randomWalk <- sum((randomWalk.forecasted.value - true.value)^2)/length(true.value)
+

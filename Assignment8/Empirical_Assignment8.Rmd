@@ -1,0 +1,223 @@
+---
+title: "Empirical_Assignment8"
+author: "Nitish Ramkumar,Ian Laker, PrasanthKumar"
+date: "March 3, 2017"
+output: pdf_document
+---
+#1 Marketing Time and sharpe ratio
+```{r echo=FALSE}
+library(knitr)
+alpha <- 0
+beta <- 1
+sigma_e <- 0.15
+sigma_x <- 0.05
+return_x <- 0.05
+```
+##1
+```{r echo=FALSE}
+sigma_r <- sqrt(sigma_e^2 + beta^2*sigma_x^2)
+kable(sigma_r)
+```
+
+##2
+```{r echo=FALSE}
+r2 <- sigma_x^2/sigma_r^2 
+kable(r2)
+```
+
+##3
+```{r echo=FALSE}
+ExpReturn_r <- alpha + beta*return_x
+SharpeRat_r <- ExpReturn_r/sigma_r
+kable(SharpeRat_r)
+```
+
+##4
+Conditional Variance = ${{\sigma}^2}_t(\hat{\alpha} + \hat{\beta} x_t + {\epsilon}_{t+1}) = {{\sigma}^2}_t({\epsilon}_{t+1})$  
+  
+Conditional Return = $\beta x_t$
+```{r}
+gamma <- 40/9
+
+xt_case1 <- 0
+xt_case2 <- 0.1
+
+condvar <- sigma_e^2
+```
+*Weights*
+```{r echo=FALSE}
+weight_case1 <- beta*xt_case1/(gamma*condvar)
+weight_case2 <- beta*xt_case2/(gamma*condvar)
+kable(t(c(weight_case1,weight_case2)),col.names = c("Case1","Case2"))
+```
+
+*Sharpe Ratio*
+```{r echo=FALSE}
+SR_case1 <- beta*xt_case1/sqrt(condvar)
+SR_case2 <- beta*xt_case2/sqrt(condvar)
+kable(t(c(SR_case1,SR_case2)),col.names = c("Case1","Case2"))
+```
+
+##5a
+Unconditional average
+```{r echo=FAlSE}
+uncondret <- 0.5*xt_case1 + 0.5*xt_case2 
+uncondret
+```
+
+##5b
+Unconditional standard deviation
+```{r echo=FALSE}
+uncondsd_part1 <- 0.5 * (weight_case1^2 * (xt_case1^2 + condvar)) + 0.5 *(weight_case2^2 * (xt_case2^2 + condvar))
+
+uncondsd_part2 <- (0.5 * (weight_case1 * xt_case1) + 0.5 * (weight_case2 * xt_case2))^2
+
+uncondsd <- (uncondsd_part1 - uncondsd_part2)^0.5
+uncondsd
+```
+
+##5c
+```{r echo=FALSE}
+uncondret/uncondsd
+```
+This has increased due to the presence of market timing, where we choose weight of risky asset based on condition.
+
+#2 VAR
+```{r echo=FALSE}
+#coefErrors <- function(X,residuals){
+ # errorTerm <- (residuals%*%t(residuals))/(nrow(residuals)-ncol(residuals))
+  #fullX <- cbind(rep(1,nrow(X)),X)
+  #sandwich <- chol2inv(chol(crossprod(fullX)))%*%t(fullX)
+  #sandwich%*%errorTerm%*%t(sandwich)
+#}
+
+library(rstudioapi)
+suppressMessages(library(xts))
+suppressMessages(library(lubridate))
+suppressWarnings(library(MTS))
+
+setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
+read_excel_allsheets <- function(filename) {
+  sheets <- readxl::excel_sheets(filename)
+  x <-    lapply(sheets, function(X) readxl::read_excel(filename, sheet = X,skip = 1))
+  names(x) <- sheets
+  x
+}
+
+#PLots
+data.raw <- read_excel_allsheets("MktRet_DP_TermSpread.xlsx")
+data <- xts(data.raw$Sheet1[-1],date_decimal(data.raw$Sheet1$Date))
+colnames(data) <- c("MktExRet","Mkt_DP","y10minFedFunds")
+plot(data$MktExRet)
+plot(data$Mkt_DP)
+plot(data$y10minFedFunds)
+
+#Acfs
+mktVal <- acf(data$MktExRet)
+mktDPVal <- acf(data$Mkt_DP)
+fedFundVal <- acf(data$y10minFedFunds)
+
+#HalfLife
+halfmktVal <- log(0.5)/log(mktVal$acf[2])
+halfDPVal <- log(0.5)/log(mktDPVal$acf[2])
+halfFedFund <- log(0.5)/log(fedFundVal$acf[2])
+
+halfLife <- c(halfmktVal,halfDPVal,halfFedFund)
+kable(t(halfLife),col.names = c("MktExcess","DP","FedFund"))
+
+#regression values coefficients 
+colnam <- c("MktExRet","Mkt_DP","FedFund")
+X <- lag(data)[-1]
+regs <- apply(data,2,function(dat){
+    lm(dat[-1]~X)
+})
+
+coefficients <- rbind(regs$MktExRet$coefficients,regs$Mkt_DP$coefficients,regs$y10minFedFunds$coefficients)
+row.names(coefficients) <- c("MktExRet_tplus1","Mkt_DP_tplus1","FedFund_tplus1")
+colnames(coefficients) <- c("Intercept",colnam)
+
+phi1 <- coefficients[,c(2,3,4)]
+phi0 <- coefficients[,1]
+kable(phi1)
+kable(phi0,col.names = "Intercept")
+
+#error
+residuals <- cbind(regs$MktExRet$residuals,regs$Mkt_DP$residuals,regs$y10minFedFunds$residuals)
+colnames(residuals) <- colnam
+
+library(DataAnalytics)
+errors <- lapply(regs,function(reg){
+  dummy <- capture.output(summ <- lmSumm(reg,HAC = T))
+  summ$coef.table[,"Std Error"]
+})
+lapply(errors,function(x){kable(t(x))})
+
+#R2
+R2 <- lapply(regs,function(reg){
+  summary(reg)$r.squared
+})
+R2
+
+#stationary - eigenVal < 1
+eigen(phi1)$values
+
+#mean
+data.mean <- chol2inv(chol(diag(rep(1,ncol(X))))-phi1)%*%phi0
+
+#vol of expected returns (1st column)
+
+#1 quarter ahead
+data.demeaned <- t(apply(X,1,function(x){ x - t(data.mean)}))
+values.tplus1 <- t(apply(t(phi1 %*% t(data.demeaned)),1,function(x){x + t(data.mean)}))
+sd(values.tplus1[,1])
+
+#4 quarters ahead
+values.tplus4 <- t(apply(t(phi1^4 %*% t(data.demeaned)),1,function(x){x + t(data.mean)}))
+
+#20 quarters ahead
+values.tplus20 <- t(apply(t(phi1^20 %*% t(data.demeaned)),1,function(x){x + t(data.mean)}))
+
+plot(values.tplus1[,1],type = "l",xlab="time",ylab="returns",main="expected returns plot 1,4,20 quarters ahead",ylim=c(0,70))
+lines(values.tplus4[,1],col="red")
+lines(values.tplus20[,1],col="blue")
+
+#IRF
+stdevs <- sqrt(diag(cov(residuals)))
+
+#phi1 for various lags
+phi1.multiLag <- lapply(c(1:20),function(count){phi1^count})
+
+IRF_Ret_RetShock <- sapply(phi1.multiLag,function(phi1Mat){
+  phi1Mat[1,1]
+})
+IRF_Ret_DPShock <- sapply(phi1.multiLag,function(phi1Mat){
+  phi1Mat[1,2]
+})
+IRF_Ret_FedFundShock <- sapply(phi1.multiLag,function(phi1Mat){
+  phi1Mat[1,3]
+})
+
+plot(IRF_Ret_RetShock,type="l",main="IRF for expected return wrt shocks on return,DP ratio,FedFund")
+plot(IRF_Ret_DPShock,col="red",type="l")
+plot(IRF_Ret_FedFundShock,col="blue",type="l")
+     
+
+#Training
+T <- nrow(data.demeaned) 
+training <- data.demeaned[1:floor(4*T/5),]     
+Y <- data[,1][-1]
+predValues <- sapply((nrow(training):(T-1)),function(lagCount){
+  out <- lm(Y[1:lagCount]~data.demeaned[1:lagCount,])
+  out$coefficients%*%c(1,data.demeaned[lagCount+1,])
+})
+actualValues <- Y[((nrow(training)+1):T),]
+
+#MSE
+mse <- mean((predValues-actualValues)^2)
+mse
+rmse <- sqrt(mse)
+rmse
+r2_outofSample <- 1 - (mse/mean((actualValues-mean(actualValues))^2))
+r2_outofSample
+
+```
